@@ -35,8 +35,76 @@ dta = let
 	)
 end
 
-# ╔═╡ 23f9c465-3349-435e-8728-c5ce71643f85
+# ╔═╡ ae691f50-df36-4d40-962f-ffbdff57a1b7
+function span_ylabel!(fig, ax, aes, row_scale, titlegap, facetlabelattributes)
+	M, N = size(aes)
 
+	for ae in aes
+        ae.axis.ylabelvisible[] = false
+    end
+    row_dict = Dict(zip(plotvalues(row_scale), datavalues(row_scale)))
+    facetlabelpadding = lift(titlegap) do gap
+        return (gap, 0f0, 0f0, 0f0)
+    end
+    for m in 1:M
+		#Box(  fig[m, N, Right()], color = :lightgray)
+        Label(fig[m, N, Right()], string(row_dict[m]);
+            rotation=-π/2, padding=facetlabelpadding,
+            facetlabelattributes...)
+    end
+    protrusion = lift(
+        (xs...) -> maximum(x -> x.left, xs),
+        (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[:, 1])...
+    )
+    # TODO: here and below, set in such a way that one can change padding after the fact?
+    ylabelpadding = lift(protrusion, ax.ylabelpadding) do val, p
+        return (0f0, val + p, 0f0, 0f0)
+    end
+    ylabelcolor = ax.ylabelcolor
+    ylabelfont = ax.ylabelfont
+    ylabelsize = ax.ylabelsize
+    ylabelattributes = (
+        color=ylabelcolor,
+        font=ylabelfont,
+        textsize=ylabelsize,
+    )
+    Label(fig[:, 1, Left()], ax.ylabel;
+        rotation=π/2, padding=ylabelpadding, ylabelattributes...)
+end
+
+# ╔═╡ 60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
+function span_xlabel!(fig, ax, aes, col_scale, titlegap, facetlabelattributes)
+	M, N = size(aes)
+	for ae in aes
+    	ae.axis.xlabelvisible[] = false
+    end
+    col_dict = Dict(zip(plotvalues(col_scale), datavalues(col_scale)))
+    labelpadding = lift(titlegap) do gap
+        return (0f0, 0f0, gap, 0f0)
+    end
+    for n in 1:N
+		#Box(  fig[1, n, Top()], color = :lightgray)
+        Label(fig[1, n, Top()], string(col_dict[n]);
+        padding=labelpadding, facetlabelattributes...)
+    end
+    protrusion = lift(
+        (xs...) -> maximum(x -> x.bottom, xs),
+        (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[M, :])...
+    )
+    xlabelpadding = lift(protrusion, ax.xlabelpadding) do val, p
+        return (0f0, 0f0, 0f0, val + p)
+    end
+    xlabelcolor = ax.xlabelcolor
+    xlabelfont = ax.xlabelfont
+    xlabelsize = ax.xlabelsize
+    xlabelattributes = (
+        color=xlabelcolor,
+        font=xlabelfont,
+        textsize=xlabelsize,
+    )
+    Label(fig[M, :, Bottom()], ax.xlabel;
+        padding=xlabelpadding, xlabelattributes...)
+end
 
 # ╔═╡ 26191f8b-98b4-4a86-9d9c-92917491fb4e
 empty_axis(ax) = isempty(ax.scene.plots)
@@ -130,69 +198,11 @@ function facet_grid!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, li
     consistent_ylabels = all(ae -> ae.axis.ylabel[] == ax.ylabel[], nonempty_aes)
 
     if !isnothing(row_scale) && consistent_ylabels
-        for ae in aes
-            ae.axis.ylabelvisible[] = false
-        end
-        row_dict = Dict(zip(plotvalues(row_scale), datavalues(row_scale)))
-        facetlabelpadding = lift(titlegap) do gap
-            return (gap, 0f0, 0f0, 0f0)
-        end
-        for m in 1:M
-			#Box(  fig[m, N, Right()], color = :lightgray)
-            Label(fig[m, N, Right()], string(row_dict[m]);
-                rotation=-π/2, padding=facetlabelpadding,
-                facetlabelattributes...)
-        end
-        protrusion = lift(
-            (xs...) -> maximum(x -> x.left, xs),
-            (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[:, 1])...
-        )
-        # TODO: here and below, set in such a way that one can change padding after the fact?
-        ylabelpadding = lift(protrusion, ax.ylabelpadding) do val, p
-            return (0f0, val + p, 0f0, 0f0)
-        end
-        ylabelcolor = ax.ylabelcolor
-        ylabelfont = ax.ylabelfont
-        ylabelsize = ax.ylabelsize
-        ylabelattributes = (
-            color=ylabelcolor,
-            font=ylabelfont,
-            textsize=ylabelsize,
-        )
-        Label(fig[:, 1, Left()], ax.ylabel;
-            rotation=π/2, padding=ylabelpadding, ylabelattributes...)
-    end
+		span_ylabel!(fig, ax, aes, row_scale, titlegap, facetlabelattributes)
+	end
     if !isnothing(col_scale) && consistent_xlabels
-        for ae in aes
-            ae.axis.xlabelvisible[] = false
-        end
-        col_dict = Dict(zip(plotvalues(col_scale), datavalues(col_scale)))
-        labelpadding = lift(titlegap) do gap
-            return (0f0, 0f0, gap, 0f0)
-        end
-        for n in 1:N
-			#Box(  fig[1, n, Top()], color = :lightgray)
-            Label(fig[1, n, Top()], string(col_dict[n]);
-                padding=labelpadding, facetlabelattributes...)
-        end
-        protrusion = lift(
-            (xs...) -> maximum(x -> x.bottom, xs),
-            (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[M, :])...
-        )
-        xlabelpadding = lift(protrusion, ax.xlabelpadding) do val, p
-            return (0f0, 0f0, 0f0, val + p)
-        end
-        xlabelcolor = ax.xlabelcolor
-        xlabelfont = ax.xlabelfont
-        xlabelsize = ax.xlabelsize
-        xlabelattributes = (
-            color=xlabelcolor,
-            font=xlabelfont,
-            textsize=xlabelsize,
-        )
-        Label(fig[M, :, Bottom()], ax.xlabel;
-            padding=xlabelpadding, xlabelattributes...)
-    end
+		span_xlabel!(fig, ax, aes, col_scale, titlegap, facetlabelattributes)
+	end
     return
 end
 
@@ -1418,13 +1428,14 @@ version = "3.5.0+0"
 # ╠═d73529d2-9b4a-4272-8575-9bfa162e6ef8
 # ╠═6249a816-c687-4bbd-aa1b-190bec8d8442
 # ╠═29fd5b57-6b93-4c8c-87cc-ef78882f6eb5
-# ╠═23f9c465-3349-435e-8728-c5ce71643f85
 # ╠═6d478440-9164-4062-8007-9b8efefe44a1
 # ╠═0fb17c38-4309-46e4-b0a6-6d27c31bb412
 # ╠═52f68434-1e58-4f9c-9824-94e4178bc86b
 # ╠═e728b439-9367-4758-b9f7-4f96b21202fa
 # ╠═7c95182b-1567-49dc-9265-fdfc9c402031
 # ╠═e596ba42-8e27-4054-a601-a867fbd1e45c
+# ╠═ae691f50-df36-4d40-962f-ffbdff57a1b7
+# ╠═60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
 # ╠═26191f8b-98b4-4a86-9d9c-92917491fb4e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
