@@ -1,5 +1,7 @@
 module AoGExtensions
 
-# Write your package code here.
+export quantileband, binscatter
+
+include("analyses.jl")
 
 end
