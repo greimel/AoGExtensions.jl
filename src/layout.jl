@@ -20,7 +20,7 @@ end
 		hideydecorations!, hidexdecorations!, hidedecorations!, hidespines!
 	using AlgebraOfGraphics: AlgebraOfGraphics,
 		AxisEntries, hideinnerdecorations!,
-		plotvalues, datavalues, legend!
+		plotvalues, datavalues
 end
 
 # ╔═╡ eca0c346-a488-46ec-9b56-51bc91724780
@@ -337,56 +337,27 @@ function facet!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, linkyax
     return
 end
 
-# ╔═╡ 5edecf9f-2d14-4274-afa2-ff99ce96f585
-function draw(s::AlgebraOfGraphics.OneOrMoreLayers;
-              axis = NamedTuple(), figure=NamedTuple(), palettes=NamedTuple(), facet=(;))
-    fg = AlgebraOfGraphics.plot(s; axis, figure, palettes)
-    facet!(fg; facet...)
-    AlgebraOfGraphics.colorbar!(fg)
-    AlgebraOfGraphics.legend!(fg)
-    AlgebraOfGraphics.resizetocontent!(fg)
-    return fg
-end
-
-# ╔═╡ 6249a816-c687-4bbd-aa1b-190bec8d8442
-let
-	@chain dta begin
-		data(_) * visual(Scatter) * mapping(
-			:x, :y, color = :c,
-			row = :d
-		)
-		draw(facet = (; linkxaxes = true, linkyaxes = false))
-	end
-end
-
-# ╔═╡ 29fd5b57-6b93-4c8c-87cc-ef78882f6eb5
-let
-	@chain dta begin
-		data(_) * visual(Scatter) * mapping(
-			:x, :y, color = :c,
-			col = :d
-		)
-		draw(facet = (; linkxaxes = true, linkyaxes = false))
-	end
-end
-
-# ╔═╡ 6d478440-9164-4062-8007-9b8efefe44a1
-let
-	ax = @chain dta begin
-		data(_) * visual(Scatter) * mapping(
-			:x, :y, color = :c,
-			layout = :c
-		)
-		draw(facet = (; linkxaxes = true, linkyaxes = false))
-	end
-end
-
 # ╔═╡ 7f7cadee-1b1a-4c60-969a-20d13b5f3361
 function draw!(fig, s::AlgebraOfGraphics.OneOrMoreLayers;
                axis=NamedTuple(), palettes=NamedTuple(), facet = (;))
     ag = AlgebraOfGraphics.plot!(fig, s; axis, palettes)
     facet!(fig, ag; facet...)
     return ag
+end
+
+# ╔═╡ 88988bc0-bbf5-47db-8727-5ed12e9b6510
+md"""
+## Guides
+"""
+
+# ╔═╡ e84f7ba2-8c60-44c3-97e2-04b524a8420a
+begin
+	legend!(fg::AlgebraOfGraphics.FigureGrid; kwargs...) = legend!(fg.figure[:, end+1], fg; kwargs...)
+
+	function legend!(figpos, grid; kwargs...)
+        legend = AlgebraOfGraphics.compute_legend(grid)
+    	return isnothing(legend) ? nothing : AlgebraOfGraphics.Legend(figpos, legend...; kwargs...)
+	end
 end
 
 # ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
@@ -423,6 +394,60 @@ function draw_with_format(aog, filename=missing;
 	end
 
 	fig
+end
+
+# ╔═╡ e29999be-5413-403a-bb7a-32a0048ca10b
+begin
+	colorbar!(fg::AlgebraOfGraphics.FigureGrid; kwargs...) = colorbar!(fg.figure[:, end+1], fg; kwargs...)
+
+	function colorbar!(figpos, grid; kwargs...)
+    	colorbar = AlgebraOfGraphics.compute_colorbar(grid)
+    	return isnothing(colorbar) ? nothing : AlgebraOfGraphics.Colorbar(figpos; colorbar..., kwargs...)
+	end
+end
+
+# ╔═╡ 5edecf9f-2d14-4274-afa2-ff99ce96f585
+function draw(s::AlgebraOfGraphics.OneOrMoreLayers;
+              axis = NamedTuple(), figure=NamedTuple(), palettes=NamedTuple(), facet=(;))
+    fg = AlgebraOfGraphics.plot(s; axis, figure, palettes)
+    facet!(fg; facet...)
+    colorbar!(fg)
+    legend!(fg)
+    AlgebraOfGraphics.resizetocontent!(fg)
+    return fg
+end
+
+# ╔═╡ 6249a816-c687-4bbd-aa1b-190bec8d8442
+let
+	@chain dta begin
+		data(_) * visual(Scatter) * mapping(
+			:x, :y, color = :c,
+			row = :d
+		)
+		draw(facet = (; linkxaxes = true, linkyaxes = false))
+	end
+end
+
+# ╔═╡ 29fd5b57-6b93-4c8c-87cc-ef78882f6eb5
+let
+	@chain dta begin
+		data(_) * visual(Scatter) * mapping(
+			:x, :y, color = :c,
+			col = :d
+		)
+		draw(facet = (; linkxaxes = true, linkyaxes = false))
+	end
+end
+
+# ╔═╡ 6d478440-9164-4062-8007-9b8efefe44a1
+let
+	ax = @chain dta begin
+		data(_) * visual(Scatter) * mapping(
+			:x, :y, color = :c,
+			layout = :c
+		)
+		draw(facet = (; linkxaxes = true, linkyaxes = false))
+	end
 end
 
 # ╔═╡ 0d89ac09-4077-47b4-a653-0200c0b3a0e7
@@ -1626,6 +1651,9 @@ version = "3.5.0+0"
 # ╠═26191f8b-98b4-4a86-9d9c-92917491fb4e
 # ╠═657177fb-01c0-4b65-bec9-8d324574fe57
 # ╠═81019d80-ee18-41ae-8e37-cbeaecebbfc3
+# ╟─88988bc0-bbf5-47db-8727-5ed12e9b6510
+# ╠═e84f7ba2-8c60-44c3-97e2-04b524a8420a
+# ╠═e29999be-5413-403a-bb7a-32a0048ca10b
 # ╟─0d89ac09-4077-47b4-a653-0200c0b3a0e7
 # ╠═eca0c346-a488-46ec-9b56-51bc91724780
 # ╠═0b0295e3-d1ea-4ac7-8773-05ddcbf262c7
