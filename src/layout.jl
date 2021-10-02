@@ -73,19 +73,106 @@ md"""
 ### Hide decorations
 """
 
-# ╔═╡ bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
+# ╔═╡ e8f4afb8-ee40-406a-8214-850b068bec9b
 md"""
-### Span labels
+### Facet labels
 """
 
-# ╔═╡ ae691f50-df36-4d40-962f-ffbdff57a1b7
-function span_ylabel!(fig, ax, aes, row_scale, titlegap, facetlabelattributes)
+# ╔═╡ bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
+md"""
+### Span axis labels
+"""
+
+# ╔═╡ 92b3bdf5-16a8-45ac-9c60-686af33e3b67
+function consistent_xlabels(nonempty_aes)
+	ax = first(nonempty_aes).axis
+	
+	return all(ae -> ae.axis.xlabel[] == ax.xlabel[], nonempty_aes)
+end
+
+# ╔═╡ 39b48cec-f9fe-4d55-a5e3-4e595885a592
+function consistent_ylabels(nonempty_aes)
+	ax = first(nonempty_aes).axis
+	
+	return all(ae -> ae.axis.ylabel[] == ax.ylabel[], nonempty_aes)
+end
+
+# ╔═╡ 26191f8b-98b4-4a86-9d9c-92917491fb4e
+empty_ae(ae) = isempty(ae.entries)
+
+# ╔═╡ e728b439-9367-4758-b9f7-4f96b21202fa
+function hide_decorations!(aes, linkxaxes, linkyaxes)
+	I, J = size(aes)
+		
+	hideydecorations!.(aes[:, 2:end],
+		grid = false,
+		ticks = linkyaxes,
+		ticklabels = linkyaxes
+	)
+	
+	if linkxaxes
+		for i in 1:I, j in 1:J
+			# check if axis below is empty
+			below_empty = (i < I) && empty_ae(aes[i+1,j])
+			
+			if (i < I) && !below_empty
+				hidexdecorations!(aes[i,j],
+					grid = false,
+					ticks = linkxaxes,
+					ticklabels = linkxaxes
+				)
+			end
+			if (i < I) && below_empty
+				aes[i,j].axis.alignmode = Mixed(bottom = MakieLayout.GridLayoutBase.Protrusion(0))
+			end
+		end
+	end
+end
+
+# ╔═╡ 657177fb-01c0-4b65-bec9-8d324574fe57
+get_nonempty_aes(aes) = filter(!empty_ae, aes)
+
+# ╔═╡ 81019d80-ee18-41ae-8e37-cbeaecebbfc3
+first_nonempty_axis(aes) = first(get_nonempty_aes(aes)).axis
+
+# ╔═╡ de9557ce-bf84-4722-9a39-9ac12cf596e6
+function col_labels!(fig, aes, col_scale)
+	M, N = size(aes)
+	
+	ax = first_nonempty_axis(aes)
+    titlegap = ax.titlegap
+    
+    facetlabelattributes = (
+        color=ax.titlecolor,
+        font=ax.titlefont,
+        textsize=ax.titlesize,
+    )
+	
+	col_dict = Dict(zip(plotvalues(col_scale), datavalues(col_scale)))
+    labelpadding = lift(titlegap) do gap
+        return (0f0, 0f0, gap, 0f0)
+    end
+    for n in 1:N
+        Label(fig[1, n, Top()], string(col_dict[n]);
+        padding=labelpadding, facetlabelattributes...)
+    end
+
+end
+
+# ╔═╡ cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
+function row_labels!(fig, aes, row_scale)
 	M, N = size(aes)
 
-	for ae in aes
-        ae.axis.ylabelvisible[] = false
-    end
-    row_dict = Dict(zip(plotvalues(row_scale), datavalues(row_scale)))
+	ax = first_nonempty_axis(aes)
+    titlegap = ax.titlegap
+    
+    facetlabelattributes = (
+        color=ax.titlecolor,
+        font=ax.titlefont,
+        textsize=ax.titlesize,
+    )
+	
+	row_dict = Dict(zip(plotvalues(row_scale), datavalues(row_scale)))
     facetlabelpadding = lift(titlegap) do gap
         return (gap, 0f0, 0f0, 0f0)
     end
@@ -95,6 +182,45 @@ function span_ylabel!(fig, ax, aes, row_scale, titlegap, facetlabelattributes)
             rotation=-π/2, padding=facetlabelpadding,
             facetlabelattributes...)
     end
+end
+
+# ╔═╡ 60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
+function span_xlabel!(fig, aes)
+	M, N = size(aes)
+	ax = first_nonempty_axis(aes)
+	
+	for ae in aes
+    	ae.axis.xlabelvisible[] = false
+    end
+    protrusion = lift(
+        (xs...) -> maximum(x -> x.bottom, xs),
+        (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[M, :])...
+    )
+	
+    xlabelpadding = lift(protrusion, ax.xlabelpadding) do val, p
+        return (0f0, 0f0, 0f0, val + p)
+    end
+    xlabelcolor = ax.xlabelcolor
+    xlabelfont = ax.xlabelfont
+    xlabelsize = ax.xlabelsize
+    xlabelattributes = (
+        color=xlabelcolor,
+        font=xlabelfont,
+        textsize=xlabelsize,
+    )
+    Label(fig[M, :, Bottom()], ax.xlabel;
+        padding=xlabelpadding, xlabelattributes...)
+end
+
+# ╔═╡ ae691f50-df36-4d40-962f-ffbdff57a1b7
+function span_ylabel!(fig, aes)
+	M, N = size(aes)
+	ax = first_nonempty_axis(aes)
+	
+	for ae in aes
+        ae.axis.ylabelvisible[] = false
+    end
+    
     protrusion = lift(
         (xs...) -> maximum(x -> x.left, xs),
         (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[:, 1])...
@@ -115,72 +241,6 @@ function span_ylabel!(fig, ax, aes, row_scale, titlegap, facetlabelattributes)
         rotation=π/2, padding=ylabelpadding, ylabelattributes...)
 end
 
-# ╔═╡ 60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
-function span_xlabel!(fig, ax, aes, col_scale, titlegap, facetlabelattributes)
-	M, N = size(aes)
-	for ae in aes
-    	ae.axis.xlabelvisible[] = false
-    end
-    col_dict = Dict(zip(plotvalues(col_scale), datavalues(col_scale)))
-    labelpadding = lift(titlegap) do gap
-        return (0f0, 0f0, gap, 0f0)
-    end
-    for n in 1:N
-		#Box(  fig[1, n, Top()], color = :lightgray)
-        Label(fig[1, n, Top()], string(col_dict[n]);
-        padding=labelpadding, facetlabelattributes...)
-    end
-    protrusion = lift(
-        (xs...) -> maximum(x -> x.bottom, xs),
-        (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[M, :])...
-    )
-    xlabelpadding = lift(protrusion, ax.xlabelpadding) do val, p
-        return (0f0, 0f0, 0f0, val + p)
-    end
-    xlabelcolor = ax.xlabelcolor
-    xlabelfont = ax.xlabelfont
-    xlabelsize = ax.xlabelsize
-    xlabelattributes = (
-        color=xlabelcolor,
-        font=xlabelfont,
-        textsize=xlabelsize,
-    )
-    Label(fig[M, :, Bottom()], ax.xlabel;
-        padding=xlabelpadding, xlabelattributes...)
-end
-
-# ╔═╡ 26191f8b-98b4-4a86-9d9c-92917491fb4e
-empty_axis(ax) = isempty(ax.scene.plots)
-
-# ╔═╡ e728b439-9367-4758-b9f7-4f96b21202fa
-function hide_decorations!(axs, linkxaxes, linkyaxes)
-	I, J = size(axs)
-		
-	hideydecorations!.(axs[:, 2:end],
-		grid = false,
-		ticks = linkyaxes,
-		ticklabels = linkyaxes
-	)
-	
-	if linkxaxes
-		for i in 1:I, j in 1:J
-			# check if axis below is empty
-			needs_deco = i < I && empty_axis(axs[i+1,j].axis)
-			
-			if (i < I) && !needs_deco
-				hidexdecorations!(axs[i,j],
-					grid = false,
-					ticks = linkxaxes,
-					ticklabels = linkxaxes
-				)
-			end
-			if (i < I) && needs_deco
-				axs[i,j].axis.alignmode = Mixed(bottom = MakieLayout.GridLayoutBase.Protrusion(0))
-			end
-		end
-	end
-end
-
 # ╔═╡ 7c95182b-1567-49dc-9265-fdfc9c402031
 function facet_wrap!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, linkyaxes = true)
 	
@@ -191,6 +251,8 @@ function facet_wrap!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, li
 	linkyaxes && linkyaxes!(aes...)
 	linkxaxes && linkxaxes!(aes...)
 
+	hide_decorations!(aes, linkxaxes, linkyaxes)
+	
 	# Add titles to axis (or delete axis if empty)
 	for ae in aes
         ax = ae.axis
@@ -207,8 +269,16 @@ function facet_wrap!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, li
             ax.title[] = string(v)
         end
     end
+	
+	nonempty_aes = get_nonempty_aes(aes)
 
-	hide_decorations!(aes, linkxaxes, linkyaxes)
+    if consistent_ylabels(nonempty_aes)
+		span_ylabel!(fig, aes)
+	end
+    if consistent_xlabels(nonempty_aes)
+		span_xlabel!(fig, aes)
+	end
+	
     return
 end
 
@@ -224,27 +294,15 @@ function facet_grid!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, li
 
 	hide_decorations!(aes, linkxaxes, linkyaxes)
 	
-    nonempty_aes = filter(ae -> !isempty(ae.entries), aes)
-
-    ax = first(nonempty_aes).axis
-    titlegap = ax.titlegap
-    titlecolor = ax.titlecolor
-    titlefont = ax.titlefont
-    titlesize = ax.titlesize
-    facetlabelattributes = (
-        color=titlecolor,
-        font=titlefont,
-        textsize=titlesize,
-    )
-
-    consistent_xlabels = all(ae -> ae.axis.xlabel[] == ax.xlabel[], nonempty_aes)
-    consistent_ylabels = all(ae -> ae.axis.ylabel[] == ax.ylabel[], nonempty_aes)
-
-    if !isnothing(row_scale) && consistent_ylabels
-		span_ylabel!(fig, ax, aes, row_scale, titlegap, facetlabelattributes)
+    nonempty_aes = get_nonempty_aes(aes)
+	
+    if !isnothing(row_scale) && consistent_ylabels(nonempty_aes)
+		span_ylabel!(fig, aes)
+		row_labels!(fig, aes, row_scale)
 	end
-    if !isnothing(col_scale) && consistent_xlabels
-		span_xlabel!(fig, ax, aes, col_scale, titlegap, facetlabelattributes)
+    if !isnothing(col_scale) && consistent_xlabels(nonempty_aes)
+		span_xlabel!(fig, aes)
+		col_labels!(fig, aes, col_scale)
 	end
     return
 end
@@ -266,10 +324,8 @@ function draw_with_format(aog, filename=missing;
 	linkxaxes = get(facet, :linkxaxes, true)
 	
 	fg = Makie.plot!(figpos, aog; axis, palettes)
-	facet_grid!(figpos, fg; linkxaxes = true, linkyaxes = true)
-    facet_wrap!(figpos, fg; linkxaxes = true, linkyaxes = true)
-
-#	return fg[2,2].axis #.elements # |> typeof |> fieldnames
+	facet_grid!(figpos, fg; linkxaxes, linkyaxes)
+    facet_wrap!(figpos, fg; linkxaxes, linkyaxes)
 	
 	if legend
 		legend = (
@@ -296,7 +352,7 @@ let
 			row = :d
 		)
 		draw_with_format(ncol = 1, nrow = 2,
-			#facet = (; linkxaxes = false, linkyaxes = false)
+			facet = (; linkxaxes = false, linkyaxes = false)
 		)
 	end
 end
@@ -309,7 +365,7 @@ let
 			col = :d
 		)
 		draw_with_format(ncol = 2, nrow = 1, 
-			#facet = (; linkxaxes = false, linkyaxes = false)
+			facet = (; linkxaxes = false, linkyaxes = false)
 		)
 	end
 end
@@ -322,7 +378,7 @@ let
 			layout = :c
 		)
 		draw_with_format(ncol = 2, nrow = 2, 
-			#facet = (; linkxaxes = false, linkyaxes = false)
+			facet = (; linkxaxes = false, linkyaxes = false)
 		)
 	end
 end
@@ -1511,10 +1567,17 @@ version = "3.5.0+0"
 # ╟─ac6a796c-6a4d-4083-9589-f5645639ddf5
 # ╟─a24e5aa3-7d10-4fe7-98e7-88025f4a8a36
 # ╠═e728b439-9367-4758-b9f7-4f96b21202fa
+# ╟─e8f4afb8-ee40-406a-8214-850b068bec9b
+# ╠═de9557ce-bf84-4722-9a39-9ac12cf596e6
+# ╠═cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
 # ╟─bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
-# ╠═ae691f50-df36-4d40-962f-ffbdff57a1b7
 # ╠═60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
+# ╠═ae691f50-df36-4d40-962f-ffbdff57a1b7
+# ╠═92b3bdf5-16a8-45ac-9c60-686af33e3b67
+# ╠═39b48cec-f9fe-4d55-a5e3-4e595885a592
 # ╠═26191f8b-98b4-4a86-9d9c-92917491fb4e
+# ╠═657177fb-01c0-4b65-bec9-8d324574fe57
+# ╠═81019d80-ee18-41ae-8e37-cbeaecebbfc3
 # ╟─0d89ac09-4077-47b4-a653-0200c0b3a0e7
 # ╠═eca0c346-a488-46ec-9b56-51bc91724780
 # ╠═0b0295e3-d1ea-4ac7-8773-05ddcbf262c7
