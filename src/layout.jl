@@ -78,6 +78,24 @@ md"""
 ### Facet labels
 """
 
+# ╔═╡ 928928f3-9276-4ffe-b97f-1b340580e939
+function panel_labels!(aes)
+	# Add titles to axis (or delete axis if empty)
+	for ae in aes
+        ax = ae.axis
+        entries = ae.entries
+        vs = Iterators.filter(
+            !isnothing,
+            (get(entry.primary, :layout, nothing) for entry in entries)
+        )
+        it = iterate(vs)
+        if !isnothing(it)
+            v, _ = it
+            ax.title[] = string(v)
+        end
+    end
+end
+
 # ╔═╡ bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
 md"""
 ### Span axis labels
@@ -112,7 +130,7 @@ function hide_decorations!(aes, linkxaxes, linkyaxes)
 	
 	if linkxaxes
 		for i in 1:I, j in 1:J
-			# check if axis below is empty
+			# don't hide x decorations if axis below is empty
 			below_empty = (i < I) && empty_ae(aes[i+1,j])
 			
 			if (i < I) && !below_empty
@@ -122,7 +140,9 @@ function hide_decorations!(aes, linkxaxes, linkyaxes)
 					ticklabels = linkxaxes
 				)
 			end
+
 			if (i < I) && below_empty
+				# improve appearance with empty axes
 				aes[i,j].axis.alignmode = Mixed(bottom = MakieLayout.GridLayoutBase.Protrusion(0))
 			end
 		end
@@ -153,6 +173,7 @@ function col_labels!(fig, aes, col_scale)
         return (0f0, 0f0, gap, 0f0)
     end
     for n in 1:N
+		# Box(  fig[1, n, Top()], color = :lightgray)
         Label(fig[1, n, Top()], string(col_dict[n]);
         padding=labelpadding, facetlabelattributes...)
     end
@@ -165,7 +186,7 @@ function row_labels!(fig, aes, row_scale)
 
 	ax = first_nonempty_axis(aes)
     titlegap = ax.titlegap
-    
+
     facetlabelattributes = (
         color=ax.titlecolor,
         font=ax.titlefont,
@@ -177,7 +198,7 @@ function row_labels!(fig, aes, row_scale)
         return (gap, 0f0, 0f0, 0f0)
     end
     for m in 1:M
-		#Box(  fig[m, N, Right()], color = :lightgray)
+		# Box(  fig[m, N, Right()], color = :lightgray)
         Label(fig[m, N, Right()], string(row_dict[m]);
             rotation=-π/2, padding=facetlabelpadding,
             facetlabelattributes...)
@@ -187,7 +208,6 @@ end
 # ╔═╡ 60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
 function span_xlabel!(fig, aes)
 	M, N = size(aes)
-	ax = first_nonempty_axis(aes)
 	
 	for ae in aes
     	ae.axis.xlabelvisible[] = false
@@ -196,6 +216,8 @@ function span_xlabel!(fig, aes)
         (xs...) -> maximum(x -> x.bottom, xs),
         (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[M, :])...
     )
+
+	ax = first_nonempty_axis(aes)
 	
     xlabelpadding = lift(protrusion, ax.xlabelpadding) do val, p
         return (0f0, 0f0, 0f0, val + p)
@@ -215,7 +237,6 @@ end
 # ╔═╡ ae691f50-df36-4d40-962f-ffbdff57a1b7
 function span_ylabel!(fig, aes)
 	M, N = size(aes)
-	ax = first_nonempty_axis(aes)
 	
 	for ae in aes
         ae.axis.ylabelvisible[] = false
@@ -226,9 +247,12 @@ function span_ylabel!(fig, aes)
         (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[:, 1])...
     )
     # TODO: here and below, set in such a way that one can change padding after the fact?
-    ylabelpadding = lift(protrusion, ax.ylabelpadding) do val, p
+    ax = first_nonempty_axis(aes)
+	
+	ylabelpadding = lift(protrusion, ax.ylabelpadding) do val, p
         return (0f0, val + p, 0f0, 0f0)
     end
+	
     ylabelcolor = ax.ylabelcolor
     ylabelfont = ax.ylabelfont
     ylabelsize = ax.ylabelsize
@@ -247,31 +271,19 @@ function facet_wrap!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, li
     scale = get(aes[1].scales, :layout, nothing)
     isnothing(scale) && return
 
-	# Link axes and hide decorations
+	# Link axes and hide decorations if appropriate
 	linkyaxes && linkyaxes!(aes...)
 	linkxaxes && linkxaxes!(aes...)
-
 	hide_decorations!(aes, linkxaxes, linkyaxes)
-	
-	# Add titles to axis (or delete axis if empty)
-	for ae in aes
-        ax = ae.axis
-        entries = ae.entries
-        vs = Iterators.filter(
-            !isnothing,
-            (get(entry.primary, :layout, nothing) for entry in entries)
-        )
-        it = iterate(vs)
-        if isnothing(it)
-            delete!(ax)
-        else
-            v, _ = it
-            ax.title[] = string(v)
-        end
-    end
-	
-	nonempty_aes = get_nonempty_aes(aes)
 
+	# delete empty axes
+	for ae in aes
+		empty_ae(ae) && delete!(ae.axis)
+	end
+	panel_labels!(aes)
+
+	# span axis labels if appropriate
+	nonempty_aes = get_nonempty_aes(aes)
     if consistent_ylabels(nonempty_aes)
 		span_ylabel!(fig, aes)
 	end
@@ -288,12 +300,12 @@ function facet_grid!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, li
     row_scale, col_scale = map(sym -> get(aes[1].scales, sym, nothing), (:row, :col))
     all(isnothing, (row_scale, col_scale)) && return
 
-	# Link axes and hide decorations
+	# Link axes and hide decorations if appropriate
 	linkyaxes && linkyaxes!(aes...)
 	linkxaxes && linkxaxes!(aes...)
-
 	hide_decorations!(aes, linkxaxes, linkyaxes)
-	
+
+	# span axis labels if appropriate
     nonempty_aes = get_nonempty_aes(aes)
 	
     if !isnothing(row_scale) && consistent_ylabels(nonempty_aes)
@@ -378,7 +390,7 @@ let
 			layout = :c
 		)
 		draw_with_format(ncol = 2, nrow = 2, 
-			facet = (; linkxaxes = false, linkyaxes = false)
+			# facet = (; linkxaxes = false, linkyaxes = false)
 		)
 	end
 end
@@ -1570,6 +1582,7 @@ version = "3.5.0+0"
 # ╟─e8f4afb8-ee40-406a-8214-850b068bec9b
 # ╠═de9557ce-bf84-4722-9a39-9ac12cf596e6
 # ╠═cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
+# ╠═928928f3-9276-4ffe-b97f-1b340580e939
 # ╟─bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
 # ╠═60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
 # ╠═ae691f50-df36-4d40-962f-ffbdff57a1b7
