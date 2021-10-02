@@ -53,6 +53,17 @@ md"""
 ## Layout
 """
 
+# ╔═╡ 979e5d9c-b094-4d39-aeb9-f49796ab7913
+md"""
+### Facet
+"""
+
+# ╔═╡ e2fc8766-e6eb-45c1-9688-76183c47e535
+function facet!(fg::AlgebraOfGraphics.FigureGrid; linkxaxes = true, linkyaxes = true)
+    facet!(fg.figure, fg.grid; linkxaxes, linkyaxes)
+    return fg
+end
+
 # ╔═╡ 31f72d47-e04a-40c7-a5e8-14c24c2bf6be
 md"""
 ### Facet wrap
@@ -319,6 +330,65 @@ function facet_grid!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, li
     return
 end
 
+# ╔═╡ f309f583-b205-4c6f-af3b-fa94deabc5e2
+function facet!(fig, aes::AbstractMatrix{AxisEntries}; linkxaxes = true, linkyaxes = true)
+    facet_wrap!(fig, aes; linkxaxes, linkyaxes)
+    facet_grid!(fig, aes; linkxaxes, linkyaxes)
+    return
+end
+
+# ╔═╡ 5edecf9f-2d14-4274-afa2-ff99ce96f585
+function draw(s::AlgebraOfGraphics.OneOrMoreLayers;
+              axis = NamedTuple(), figure=NamedTuple(), palettes=NamedTuple(), facet=(;))
+    fg = AlgebraOfGraphics.plot(s; axis, figure, palettes)
+    facet!(fg; facet...)
+    AlgebraOfGraphics.colorbar!(fg)
+    AlgebraOfGraphics.legend!(fg)
+    AlgebraOfGraphics.resizetocontent!(fg)
+    return fg
+end
+
+# ╔═╡ 6249a816-c687-4bbd-aa1b-190bec8d8442
+let
+	@chain dta begin
+		data(_) * visual(Scatter) * mapping(
+			:x, :y, color = :c,
+			row = :d
+		)
+		draw(facet = (; linkxaxes = true, linkyaxes = false))
+	end
+end
+
+# ╔═╡ 29fd5b57-6b93-4c8c-87cc-ef78882f6eb5
+let
+	@chain dta begin
+		data(_) * visual(Scatter) * mapping(
+			:x, :y, color = :c,
+			col = :d
+		)
+		draw(facet = (; linkxaxes = true, linkyaxes = false))
+	end
+end
+
+# ╔═╡ 6d478440-9164-4062-8007-9b8efefe44a1
+let
+	ax = @chain dta begin
+		data(_) * visual(Scatter) * mapping(
+			:x, :y, color = :c,
+			layout = :c
+		)
+		draw(facet = (; linkxaxes = true, linkyaxes = false))
+	end
+end
+
+# ╔═╡ 7f7cadee-1b1a-4c60-969a-20d13b5f3361
+function draw!(fig, s::AlgebraOfGraphics.OneOrMoreLayers;
+               axis=NamedTuple(), palettes=NamedTuple(), facet = (;))
+    ag = AlgebraOfGraphics.plot!(fig, s; axis, palettes)
+    facet!(fig, ag; facet...)
+    return ag
+end
+
 # ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
 function draw_with_format(aog, filename=missing; 
 		nrow = 1 , ncol = 1,
@@ -336,8 +406,7 @@ function draw_with_format(aog, filename=missing;
 	linkxaxes = get(facet, :linkxaxes, true)
 	
 	fg = Makie.plot!(figpos, aog; axis, palettes)
-	facet_grid!(figpos, fg; linkxaxes, linkyaxes)
-    facet_wrap!(figpos, fg; linkxaxes, linkyaxes)
+	facet!(figpos, fg; linkxaxes, linkyaxes)
 	
 	if legend
 		legend = (
@@ -354,45 +423,6 @@ function draw_with_format(aog, filename=missing;
 	end
 
 	fig
-end
-
-# ╔═╡ 6249a816-c687-4bbd-aa1b-190bec8d8442
-let
-	@chain dta begin
-		data(_) * visual(Scatter) * mapping(
-			:x, :y, color = :c,
-			row = :d
-		)
-		draw_with_format(ncol = 1, nrow = 2,
-			facet = (; linkxaxes = false, linkyaxes = false)
-		)
-	end
-end
-
-# ╔═╡ 29fd5b57-6b93-4c8c-87cc-ef78882f6eb5
-let
-	@chain dta begin
-		data(_) * visual(Scatter) * mapping(
-			:x, :y, color = :c,
-			col = :d
-		)
-		draw_with_format(ncol = 2, nrow = 1, 
-			facet = (; linkxaxes = false, linkyaxes = false)
-		)
-	end
-end
-
-# ╔═╡ 6d478440-9164-4062-8007-9b8efefe44a1
-let
-	ax = @chain dta begin
-		data(_) * visual(Scatter) * mapping(
-			:x, :y, color = :c,
-			layout = :c
-		)
-		draw_with_format(ncol = 2, nrow = 2, 
-			# facet = (; linkxaxes = false, linkyaxes = false)
-		)
-	end
 end
 
 # ╔═╡ 0d89ac09-4077-47b4-a653-0200c0b3a0e7
@@ -1570,8 +1600,13 @@ version = "3.5.0+0"
 # ╟─4c99f947-72c6-4b59-8472-687adc556cc6
 # ╠═0fb17c38-4309-46e4-b0a6-6d27c31bb412
 # ╟─714de7f2-8cac-4fcd-99ff-5735a309f234
+# ╠═5edecf9f-2d14-4274-afa2-ff99ce96f585
+# ╠═7f7cadee-1b1a-4c60-969a-20d13b5f3361
 # ╠═52f68434-1e58-4f9c-9824-94e4178bc86b
 # ╟─94d75889-c86b-40b3-a95d-f8795b9b52da
+# ╟─979e5d9c-b094-4d39-aeb9-f49796ab7913
+# ╠═f309f583-b205-4c6f-af3b-fa94deabc5e2
+# ╠═e2fc8766-e6eb-45c1-9688-76183c47e535
 # ╟─31f72d47-e04a-40c7-a5e8-14c24c2bf6be
 # ╠═7c95182b-1567-49dc-9265-fdfc9c402031
 # ╟─32399581-fcc4-45f5-a70a-9031176fe853
