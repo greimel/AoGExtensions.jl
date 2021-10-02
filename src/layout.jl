@@ -23,6 +23,9 @@ end
 		plotvalues, datavalues, legend!
 end
 
+# ╔═╡ eca0c346-a488-46ec-9b56-51bc91724780
+using PlutoUI: TableOfContents
+
 # ╔═╡ d73529d2-9b4a-4272-8575-9bfa162e6ef8
 dta = let
 	N = 100
@@ -34,6 +37,46 @@ dta = let
 		d = rand(["α", "b"], N)
 	)
 end
+
+# ╔═╡ 4c99f947-72c6-4b59-8472-687adc556cc6
+md"""
+# Implementation
+"""
+
+# ╔═╡ 714de7f2-8cac-4fcd-99ff-5735a309f234
+md"""
+## Draw
+"""
+
+# ╔═╡ 94d75889-c86b-40b3-a95d-f8795b9b52da
+md"""
+## Layout
+"""
+
+# ╔═╡ 31f72d47-e04a-40c7-a5e8-14c24c2bf6be
+md"""
+### Facet wrap
+"""
+
+# ╔═╡ 32399581-fcc4-45f5-a70a-9031176fe853
+md"""
+### Facet grid
+"""
+
+# ╔═╡ ac6a796c-6a4d-4083-9589-f5645639ddf5
+md"""
+## Helpers
+"""
+
+# ╔═╡ a24e5aa3-7d10-4fe7-98e7-88025f4a8a36
+md"""
+### Hide decorations
+"""
+
+# ╔═╡ bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
+md"""
+### Span labels
+"""
 
 # ╔═╡ ae691f50-df36-4d40-962f-ffbdff57a1b7
 function span_ylabel!(fig, ax, aes, row_scale, titlegap, facetlabelattributes)
@@ -284,6 +327,14 @@ let
 	end
 end
 
+# ╔═╡ 0d89ac09-4077-47b4-a653-0200c0b3a0e7
+md"""
+# Appendix
+"""
+
+# ╔═╡ 0b0295e3-d1ea-4ac7-8773-05ddcbf262c7
+TableOfContents()
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -291,12 +342,14 @@ AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 
 [compat]
 AlgebraOfGraphics = "~0.5.4"
 CairoMakie = "~0.6.5"
 Chain = "~0.4.8"
 Makie = "~0.15.2"
+PlutoUI = "~0.7.14"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -656,6 +709,17 @@ deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll",
 git-tree-sha1 = "8a954fed8ac097d5be04921d595f741115c1b2ad"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+0"
+
+[[deps.HypertextLiteral]]
+git-tree-sha1 = "72053798e1be56026b81d4e2682dbe58922e5ec9"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.0"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.2"
 
 [[deps.IfElse]]
 git-tree-sha1 = "28e837ff3e7a6c3cdb252ce49fb412c8eb3caeef"
@@ -1044,6 +1108,12 @@ git-tree-sha1 = "2537ed3c0ed5e03896927187f5f2ee6a4ab342db"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.0.14"
 
+[[deps.PlutoUI]]
+deps = ["Base64", "Dates", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
+git-tree-sha1 = "d1fb76655a95bf6ea4348d7197b22e889a4375f4"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.14"
+
 [[deps.PolygonOps]]
 git-tree-sha1 = "c031d2332c9a8e1c90eca239385815dc271abb22"
 uuid = "647866c9-e3ac-4575-94e7-e3d426903924"
@@ -1429,13 +1499,24 @@ version = "3.5.0+0"
 # ╠═6249a816-c687-4bbd-aa1b-190bec8d8442
 # ╠═29fd5b57-6b93-4c8c-87cc-ef78882f6eb5
 # ╠═6d478440-9164-4062-8007-9b8efefe44a1
+# ╟─4c99f947-72c6-4b59-8472-687adc556cc6
 # ╠═0fb17c38-4309-46e4-b0a6-6d27c31bb412
+# ╟─714de7f2-8cac-4fcd-99ff-5735a309f234
 # ╠═52f68434-1e58-4f9c-9824-94e4178bc86b
-# ╠═e728b439-9367-4758-b9f7-4f96b21202fa
+# ╟─94d75889-c86b-40b3-a95d-f8795b9b52da
+# ╟─31f72d47-e04a-40c7-a5e8-14c24c2bf6be
 # ╠═7c95182b-1567-49dc-9265-fdfc9c402031
+# ╟─32399581-fcc4-45f5-a70a-9031176fe853
 # ╠═e596ba42-8e27-4054-a601-a867fbd1e45c
+# ╟─ac6a796c-6a4d-4083-9589-f5645639ddf5
+# ╟─a24e5aa3-7d10-4fe7-98e7-88025f4a8a36
+# ╠═e728b439-9367-4758-b9f7-4f96b21202fa
+# ╟─bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
 # ╠═ae691f50-df36-4d40-962f-ffbdff57a1b7
 # ╠═60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
 # ╠═26191f8b-98b4-4a86-9d9c-92917491fb4e
+# ╟─0d89ac09-4077-47b4-a653-0200c0b3a0e7
+# ╠═eca0c346-a488-46ec-9b56-51bc91724780
+# ╠═0b0295e3-d1ea-4ac7-8773-05ddcbf262c7
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
