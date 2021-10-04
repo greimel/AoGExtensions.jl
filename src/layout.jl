@@ -13,7 +13,7 @@ begin
 end
 
 # ╔═╡ 0fb17c38-4309-46e4-b0a6-6d27c31bb412
-	begin
+begin
 	using Makie: Makie, lift, Figure, Axis, Legend, automatic
 	using Makie.MakieLayout: MakieLayout, linkxaxes!, linkyaxes!,
 		Label, Box, Top, Bottom, Left, Right, Mixed,
@@ -22,6 +22,9 @@ end
 		AxisEntries, hideinnerdecorations!,
 		plotvalues, datavalues, deleteemptyaxes!
 end
+
+# ╔═╡ 44fda813-b5a5-463d-8b22-38809304272c
+using UnPack
 
 # ╔═╡ eca0c346-a488-46ec-9b56-51bc91724780
 using PlutoUI: TableOfContents
@@ -441,7 +444,7 @@ function facet_wrap!(fig, aes::AbstractMatrix{AxisEntries}; facet...)
     isnothing(scale) && return
 
 	# Link axes and hide decorations if appropriate
-	@show (; linkxaxes, linkyaxes, hidexdecorations, hideydecorations) = facet_replace_defaults(aes, facet)
+	@unpack linkxaxes, linkyaxes, hidexdecorations, hideydecorations = facet_replace_defaults(aes, facet)
 	link_axes!(aes; linkxaxes, linkyaxes)
 	hide_decorations!(aes; hidexdecorations, hideydecorations)
 
@@ -467,7 +470,7 @@ function facet_grid!(fig, aes::AbstractMatrix{AxisEntries}; facet...)
     all(isnothing, (row_scale, col_scale)) && return
 	
 	# Link axes and hide decorations if appropriate
-	@show (; linkxaxes, linkyaxes, hidexdecorations, hideydecorations) = facet_replace_defaults(aes, facet)
+	@unpack linkxaxes, linkyaxes, hidexdecorations, hideydecorations = facet_replace_defaults(aes, facet)
 	link_axes!(aes; linkxaxes, linkyaxes)
 	hide_decorations!(aes; hidexdecorations, hideydecorations)
 
@@ -649,6 +652,7 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
 AlgebraOfGraphics = "~0.5.4"
@@ -656,6 +660,7 @@ CairoMakie = "~0.6.5"
 Chain = "~0.4.8"
 Makie = "~0.15.2"
 PlutoUI = "~0.7.14"
+UnPack = "~1.0.2"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -1665,6 +1670,11 @@ version = "0.9.6"
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
+[[deps.UnPack]]
+git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
+uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+version = "1.0.2"
+
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
@@ -1824,6 +1834,7 @@ version = "3.5.0+0"
 # ╠═f309f583-b205-4c6f-af3b-fa94deabc5e2
 # ╠═e2fc8766-e6eb-45c1-9688-76183c47e535
 # ╟─31f72d47-e04a-40c7-a5e8-14c24c2bf6be
+# ╠═44fda813-b5a5-463d-8b22-38809304272c
 # ╠═7c95182b-1567-49dc-9265-fdfc9c402031
 # ╟─32399581-fcc4-45f5-a70a-9031176fe853
 # ╠═e596ba42-8e27-4054-a601-a867fbd1e45c
