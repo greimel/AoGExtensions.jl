@@ -9,7 +9,7 @@ begin
 	using Chain: @chain
 	using Makie: Scatter
 	import CairoMakie
-	using AlgebraOfGraphics: data, visual, mapping
+	using AlgebraOfGraphics: data, visual, mapping, linear, dims
 end
 
 # ╔═╡ 0fb17c38-4309-46e4-b0a6-6d27c31bb412
@@ -26,16 +26,64 @@ end
 # ╔═╡ eca0c346-a488-46ec-9b56-51bc91724780
 using PlutoUI: TableOfContents
 
+# ╔═╡ 09a8ba84-d096-4ed0-82d2-498dddbf09fe
+md"""
+# Examples
+"""
+
+# ╔═╡ f145e810-0a40-479d-94b4-b6c9fcd0c7bc
+md"""
+## Long data
+"""
+
 # ╔═╡ d73529d2-9b4a-4272-8575-9bfa162e6ef8
 dta = let
 	N = 100
-	x = rand(1:10, N)
-	(;
-		x, 
-		y = x .+ 2 .* rand.(),
-		c = rand(["a", "b", "c"], N),
-		d = rand(["α", "b"], N)
+	x0 = rand(1:10, N)
+	c = rand(["a", "b", "c"], N)
+	d = rand(["α", "β"], N)
+
+	x = map(zip(x0, c)) do (xx, cc)
+		shift = cc == "a" ? -2.9 : cc == "c" ? 2.9 : 0.0
+		xx + shift
+	end
+
+	y = map(zip(x0, d)) do (xx, dd)
+		shift = dd == "α" ? -3.9 : 3.9
+		xx + 2 + shift + rand()
+	end
+
+	(; x, y, c, d)
+end
+
+# ╔═╡ 8ce95192-073a-49da-921e-574a293e184f
+md"""
+### Facet grid
+"""
+
+# ╔═╡ f31ab3e7-c306-4b09-9da1-d0cc59dc3770
+md"""
+### Facet wrap
+"""
+
+# ╔═╡ 31daa741-de80-4eb3-8ab3-5e761d814e81
+md"""
+## Wide data -- facet grid
+"""
+
+# ╔═╡ 687913f3-9e37-4a6a-bdef-2fa20dac8809
+plt_wide = let
+	df = (
+		sepal_length = 1 .+ rand(100), 
+		sepal_width = 2 .+ rand(100), 	
+		petal_length = 3 .+ rand(100),
+		petal_width = 4 .+ rand(100)
 	)
+	xvars = Symbol.(["sepal_length", "sepal_width"])
+	yvars = Symbol.(["petal_length" "petal_width"])
+	layers = linear() + visual(Scatter)
+	
+	data(df) * layers * mapping(xvars, yvars, col=dims(1), row=dims(2))
 end
 
 # ╔═╡ 4c99f947-72c6-4b59-8472-687adc556cc6
@@ -526,7 +574,7 @@ let
 			:x, :y, color = :c,
 			row = :d
 		)
-		draw(facet = (; linkxaxes = true, linkyaxes = false))
+		draw(facet = (; linkxaxes = automatic, linkyaxes = automatic))
 	end
 end
 
@@ -535,22 +583,55 @@ let
 	@chain dta begin
 		data(_) * visual(Scatter) * mapping(
 			:x, :y, color = :c,
-			col = :d
+			col = :c
 		)
-		draw(facet = (; linkxaxes = true, linkyaxes = false))
+		draw(;
+			#facet = (; linkxaxes = :all, linkyaxes = :all) # chosen automatically
+			facet = (; linkxaxes = :bycol, linkyaxes = :byrow) 
+			#facet = (; linkxaxes = :none, linkyaxes = :none) # current behavior
+		)
 	end
 end
 
-# ╔═╡ 6d478440-9164-4062-8007-9b8efefe44a1
+# ╔═╡ 2a12911f-ef3b-46c2-8194-97daf8b5e144
+let
+	@chain dta begin
+		data(_) * visual(Scatter) * mapping(
+			:x, :y, color = :c,
+			col = :c, row = :d
+		)
+		draw(;
+			#facet = (; linkxaxes = :all, linkyaxes = :all) # chosen automatically
+			#facet = (; linkxaxes = :bycol, linkyaxes = :byrow)
+			facet = (; linkxaxes = :all, linkyaxes = :none)
+			#facet = (; linkxaxes = :none, linkyaxes = :none) # current behavior
+		)
+	end
+end
+
+# ╔═╡ 435effd0-fdfa-40b4-aaa6-abd62f340f45
 let
 	ax = @chain dta begin
 		data(_) * visual(Scatter) * mapping(
 			:x, :y, color = :c,
 			layout = :c
 		)
-		draw(facet = (; linkxaxes = true, linkyaxes = false))
+		draw(;
+			#facet = (; linkxaxes = :all, linkyaxes = :all) # chosen automatically
+			#facet = (; linkxaxes = :bycol, linkyaxes = :byrow) 
+			#facet = (; linkxaxes = :none, linkyaxes = :none) # current behavior
+		)
 	end
 end
+
+# ╔═╡ 19e2f476-1b1a-4e8f-b85a-ccc0588e0df3
+draw(
+	plt_wide,
+	#facet = (; linkxaxes = :all, linkyaxes = :all) # current behavior
+	#facet = (; linkxaxes = :all, linkyaxes = :all)
+	#facet = (; linkxaxes = :byrow, linkyaxes = :bycol) # chosen automatically
+	#facet = (; linkxaxes = :none, linkyaxes = :none)	
+)
 
 # ╔═╡ 0d89ac09-4077-47b4-a653-0200c0b3a0e7
 md"""
@@ -1720,7 +1801,10 @@ version = "3.5.0+0"
 
 # ╔═╡ Cell order:
 # ╠═61e53542-9520-4b2b-a4b5-0637c4000a4c
+# ╟─09a8ba84-d096-4ed0-82d2-498dddbf09fe
+# ╟─f145e810-0a40-479d-94b4-b6c9fcd0c7bc
 # ╠═d73529d2-9b4a-4272-8575-9bfa162e6ef8
+# ╟─8ce95192-073a-49da-921e-574a293e184f
 # ╠═6249a816-c687-4bbd-aa1b-190bec8d8442
 # ╠═29fd5b57-6b93-4c8c-87cc-ef78882f6eb5
 # ╠═2a12911f-ef3b-46c2-8194-97daf8b5e144
@@ -1744,6 +1828,15 @@ version = "3.5.0+0"
 # ╟─32399581-fcc4-45f5-a70a-9031176fe853
 # ╠═e596ba42-8e27-4054-a601-a867fbd1e45c
 # ╟─ac6a796c-6a4d-4083-9589-f5645639ddf5
+# ╠═6cc554ad-00d8-4dae-a19a-1dde17551607
+# ╠═80f3de1f-1587-49cc-b4a4-a4e4a8c074fb
+# ╠═a9ceadf0-f00a-43ec-854f-85c87e4dfa04
+# ╠═1911ebd8-be9f-4b7c-b1b2-6c0357a4b7bb
+# ╠═7d281ddd-5459-4433-b214-3da71bde9f67
+# ╟─907a9267-86e4-4094-87e5-03e0fcd156ff
+# ╠═533eea56-6118-4c54-8dfa-4b245c76eec0
+# ╠═1ae3fb24-e098-48cd-a6fa-56ab2f2144a4
+# ╠═7bbd9c3b-9ce8-41d3-bdc9-ba6ead949a8a
 # ╟─a24e5aa3-7d10-4fe7-98e7-88025f4a8a36
 # ╠═e728b439-9367-4758-b9f7-4f96b21202fa
 # ╟─e8f4afb8-ee40-406a-8214-850b068bec9b
@@ -1753,8 +1846,6 @@ version = "3.5.0+0"
 # ╟─bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
 # ╠═60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
 # ╠═ae691f50-df36-4d40-962f-ffbdff57a1b7
-# ╠═92b3bdf5-16a8-45ac-9c60-686af33e3b67
-# ╠═39b48cec-f9fe-4d55-a5e3-4e595885a592
 # ╠═26191f8b-98b4-4a86-9d9c-92917491fb4e
 # ╠═657177fb-01c0-4b65-bec9-8d324574fe57
 # ╠═81019d80-ee18-41ae-8e37-cbeaecebbfc3
