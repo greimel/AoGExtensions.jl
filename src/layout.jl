@@ -17,7 +17,8 @@ begin
 	using Makie: Makie, lift, Figure, Axis, Legend, automatic
 	using Makie.MakieLayout: MakieLayout, linkxaxes!, linkyaxes!,
 		Label, Box, Top, Bottom, Left, Right, Mixed,
-		hideydecorations!, hidexdecorations!, hidedecorations!, hidespines!
+		hideydecorations!, hidexdecorations!, hidedecorations!, hidespines!,
+		Relative
 	using AlgebraOfGraphics: AlgebraOfGraphics,
 		AxisEntries, hideinnerdecorations!,
 		plotvalues, datavalues, deleteemptyaxes!
@@ -495,8 +496,8 @@ end
 
 # ╔═╡ 7f7cadee-1b1a-4c60-969a-20d13b5f3361
 function draw!(fig, s::AlgebraOfGraphics.OneOrMoreLayers;
-               axis=NamedTuple(), palettes=NamedTuple(), facet = (;))
-    ag = AlgebraOfGraphics.plot!(fig, s; axis, palettes)
+               axis=(;), palettes=(;), facet=(;), legend=(;), colorbar=(;))
+    ag = AlgebraOfGraphics.plot!(fig, s; axis, palettes, legend)
     facet!(fig, ag; facet)
     return ag
 end
@@ -506,52 +507,116 @@ md"""
 ## Guides
 """
 
+# ╔═╡ 98ceb516-fd62-4194-9477-206e7b6a7710
+md"""
+### Position
+"""
+
+# ╔═╡ 052ca49c-83c1-4c82-8e1f-7f310afb3bb9
+function guides_position(fig::Figure, position)
+	if position == :bottom
+		#ax_pos 	 = fig[1,1] 
+		legs_pos = fig[end+1,:]
+	elseif position == :top
+		#ax_pos 	 = fig[2,1] 
+		legs_pos = fig[0,:]
+	elseif position == :right
+		#ax_pos   = fig[1,1]
+		legs_pos = fig[:,end+1]
+	elseif position == :left
+		#ax_pos   = fig[1,2]
+		legs_pos = fig[:,0]
+	end
+
+	legs_pos
+end
+
+# ╔═╡ 0c0f6402-7d7a-4e5a-b1f5-a625aa8cfe3c
+md"""
+### Legend attributes
+"""
+
+# ╔═╡ ade405b1-2a36-4a71-a010-5398a581474e
+default_orientation(position) = position in [:top, :bottom] ? :horizontal : :vertical
+
+# ╔═╡ b27a7b57-86bd-4430-b9f1-ba3104485757
+default_nbanks(orientation, has_colorbar) = has_colorbar && (orientation == :horizontal) ? 2 : 1
+
+# ╔═╡ 8266b1fc-afb1-409b-92aa-bda2be9bed85
+default_titleposition(orientation) = orientation == :horizontal ? :left : :top
+
+# ╔═╡ 75a78cef-a648-4cf1-a474-5d057e009a09
+function legend_attributes(legend_attr, has_colorbar)
+    legend_attr = Dict(pairs(legend_attr))
+    
+	position        = pop!(legend_attr, :position, :top)
+	orientation     = pop!(legend_attr, :orientation, default_orientation(position))
+	titleposition   = pop!(legend_attr, :titleposition, default_titleposition(orientation))
+	nbanks          = pop!(legend_attr, :nbanks, default_nbanks(orientation, has_colorbar))
+	tellwidth       = pop!(legend_attr, :tellwidth, position ∈ [:left, :right])
+	tellheight      = pop!(legend_attr, :tellwidth, position ∈ [:top, :bottom])
+
+    attr = (; position, orientation, titleposition, nbanks, tellwidth, tellheight, legend_attr...)
+end
+
 # ╔═╡ e84f7ba2-8c60-44c3-97e2-04b524a8420a
 begin
-	legend!(fg::AlgebraOfGraphics.FigureGrid; kwargs...) = legend!(fg.figure[:, end+1], fg; kwargs...)
+	function legend!(fg::AlgebraOfGraphics.FigureGrid; kwargs...)
+		
+		attr = legend_attributes(kwargs, false)
+		
+		guide_pos = guides_position(fg.figure::Figure, attr.position)
 
+		legend!(guide_pos, fg; attr...)
+	end
 	function legend!(figpos, grid; kwargs...)
         legend = AlgebraOfGraphics.compute_legend(grid)
     	return isnothing(legend) ? nothing : AlgebraOfGraphics.Legend(figpos, legend...; kwargs...)
 	end
 end
 
-# ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
-function draw_with_format(aog, filename=missing; 
-		nrow = 1 , ncol = 1,
-		axis = (;), palettes = (;), facet = (;),
-		legend = true
-	)
-    figure = (
-        resolution = round.(Int, (ncol * 240, nrow * 240)),
-    )
-	
-	fig = Figure(; figure...)
-	figpos = fig[1,1]
-	
-	fg = Makie.plot!(figpos, aog; axis, palettes)
-	facet!(figpos, fg; facet)
-	
-	if legend
-		legend = (
-			orientation = :horizontal,
-			framevisible = false,
-			titleposition = :left
-		)
-	
-		legend!(fig[0,1], fg; legend...)
-	end
+# ╔═╡ e44d21ec-de81-47cf-bd0b-5d673bf8da18
+md"""
+### Colorbar attributes
+"""
 
-	if !ismissing(filename)
-		save(plotsdir(filename), fig)
+# ╔═╡ d2421b5a-4e04-402c-8629-09834371e6c2
+function colorbar_attributes(attr)
+	attr = Dict(pairs(attr))
+    
+	position        = pop!(attr, :position, :top)
+	orientation     = pop!(attr, :orientation, default_orientation(position))
+	
+	vertical = orientation == :vertical
+	horizontal = !vertical
+	
+	if horizontal
+		cb_attributes = (
+			height = 18, width = Relative(1.0),
+			tellwidth = true,
+			vertical = vertical,
+			valign = :center,
+			ticksize = 5,
+  			ticklabelpad = 1.5)
+	else
+		cb_attributes = (
+			width = 18, height = Relative(1.0),
+			vertical = vertical,
+			halign = :center,
+	)	
 	end
-
-	fig
+	position, cb_attributes
 end
 
 # ╔═╡ e29999be-5413-403a-bb7a-32a0048ca10b
 begin
-	colorbar!(fg::AlgebraOfGraphics.FigureGrid; kwargs...) = colorbar!(fg.figure[:, end+1], fg; kwargs...)
+	function colorbar!(fg::AlgebraOfGraphics.FigureGrid; kwargs...)
+		pos, attr = colorbar_attributes(kwargs)
+		
+		guide_pos = guides_position(fg.figure::Figure, pos)
+		colorbar!(guide_pos, fg; attr...)
+		
+	end
 
 	function colorbar!(figpos, grid; kwargs...)
     	colorbar = AlgebraOfGraphics.compute_colorbar(grid)
@@ -561,11 +626,13 @@ end
 
 # ╔═╡ 5edecf9f-2d14-4274-afa2-ff99ce96f585
 function draw(s::AlgebraOfGraphics.OneOrMoreLayers;
-              axis = NamedTuple(), figure=NamedTuple(), palettes=NamedTuple(), facet=(;))
+              axis = (;), figure=(;), palettes=(;),
+              facet=(;), legend=(;), colorbar=(;)
+    )
     fg = AlgebraOfGraphics.plot(s; axis, figure, palettes)
     facet!(fg; facet)
-    colorbar!(fg)
-    legend!(fg)
+    colorbar!(fg; colorbar...)
+    legend!(fg; legend...)
     AlgebraOfGraphics.resizetocontent!(fg)
     return fg
 end
@@ -574,10 +641,15 @@ end
 let
 	@chain dta begin
 		data(_) * visual(Scatter) * mapping(
-			:x, :y, color = :c,
+			:x, :y, color = :x => "",
+			marker = :c,
 			row = :d
 		)
-		draw(facet = (; linkxaxes = automatic, linkyaxes = automatic))
+		draw(
+			facet = (; linkxaxes = automatic, linkyaxes = automatic),
+			legend = (; position = :right),
+			colorbar = (; position = :top)
+		)
 	end
 end
 
@@ -590,7 +662,8 @@ let
 		)
 		draw(;
 			#facet = (; linkxaxes = :all, linkyaxes = :all) # chosen automatically
-			facet = (; linkxaxes = :bycol, linkyaxes = :byrow) 
+			facet = (; linkxaxes = :bycol, linkyaxes = :byrow),
+			legend = (; position = :bottom)
 			#facet = (; linkxaxes = :none, linkyaxes = :none) # current behavior
 		)
 	end
@@ -635,6 +708,24 @@ draw(
 	#facet = (; linkxaxes = :byrow, linkyaxes = :bycol) # chosen automatically
 	#facet = (; linkxaxes = :none, linkyaxes = :none)	
 )
+
+# ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
+function draw_with_format(plt, filename=missing; 
+		nrow = 1 , ncol = 1,
+		axis = (;), palettes = (;), facet = (;), legend = (;), colorbar = (;)
+	)
+    figure = (
+        resolution = round.(Int, (ncol * 240, nrow * 240)),
+    )
+	
+    fg = draw(plt; axis, palettes, facet, legend, colorbar)	
+
+	if !ismissing(filename)
+		save(plotsdir(filename), fg)
+	end
+
+	fg
+end
 
 # ╔═╡ 0d89ac09-4077-47b4-a653-0200c0b3a0e7
 md"""
@@ -1863,6 +1954,15 @@ version = "3.5.0+0"
 # ╟─88988bc0-bbf5-47db-8727-5ed12e9b6510
 # ╠═e84f7ba2-8c60-44c3-97e2-04b524a8420a
 # ╠═e29999be-5413-403a-bb7a-32a0048ca10b
+# ╟─98ceb516-fd62-4194-9477-206e7b6a7710
+# ╠═052ca49c-83c1-4c82-8e1f-7f310afb3bb9
+# ╟─0c0f6402-7d7a-4e5a-b1f5-a625aa8cfe3c
+# ╠═75a78cef-a648-4cf1-a474-5d057e009a09
+# ╠═ade405b1-2a36-4a71-a010-5398a581474e
+# ╠═b27a7b57-86bd-4430-b9f1-ba3104485757
+# ╠═8266b1fc-afb1-409b-92aa-bda2be9bed85
+# ╟─e44d21ec-de81-47cf-bd0b-5d673bf8da18
+# ╠═d2421b5a-4e04-402c-8629-09834371e6c2
 # ╟─0d89ac09-4077-47b4-a653-0200c0b3a0e7
 # ╠═eca0c346-a488-46ec-9b56-51bc91724780
 # ╠═0b0295e3-d1ea-4ac7-8773-05ddcbf262c7
