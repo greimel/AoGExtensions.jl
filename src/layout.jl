@@ -736,6 +736,24 @@ function draw_with_format(plt, filename=missing;
 	fg
 end
 
+# ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
+function draw_with_format(plt, filename=missing; 
+		nrow = 1 , ncol = 1,
+		axis = (;), palettes = (;), facet = (;), legend = (;), colorbar = (;)
+	)
+    figure = (
+        resolution = round.(Int, (ncol * 240, nrow * 240)),
+    )
+	
+    fg = draw(plt; axis, palettes, facet, legend, colorbar)	
+
+	if !ismissing(filename)
+		save(plotsdir(filename), fg)
+	end
+
+	fg
+end
+
 # ╔═╡ 0d89ac09-4077-47b4-a653-0200c0b3a0e7
 md"""
 # Appendix
