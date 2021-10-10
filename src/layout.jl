@@ -90,6 +90,20 @@ plt_wide = let
 	data(df) * layers * mapping(xvars, yvars, col=dims(1), row=dims(2))
 end
 
+# ╔═╡ b54d7352-9959-4a47-a6d5-85ec576d55d0
+plt_wide_layout = let
+	df = (
+		sepal_length = 1 .+ rand(100), 
+		sepal_width = 2 .+ rand(100), 	
+		petal_length = 3 .+ rand(100),
+		petal_width = 4 .+ rand(100)
+	)
+	xvars = Symbol.(["sepal_length", "sepal_width", "petal_width"])
+	layers = linear() + visual(Scatter)
+	
+	data(df) * layers * mapping(xvars, :petal_length, layout=dims(1))
+end
+
 # ╔═╡ 4c99f947-72c6-4b59-8472-687adc556cc6
 md"""
 # Implementation
@@ -177,22 +191,17 @@ md"""
 ### Facet labels
 """
 
-# ╔═╡ 928928f3-9276-4ffe-b97f-1b340580e939
-function panel_labels!(aes)
-	# Add titles to axis (or delete axis if empty)
-	for ae in aes
-        ax = ae.axis
-        entries = ae.entries
-        vs = Iterators.filter(
-            !isnothing,
-            (get(entry.primary, :layout, nothing) for entry in entries)
-        )
-        it = iterate(vs)
-        if !isnothing(it)
-            v, _ = it
-            ax.title[] = string(v)
-        end
-    end
+# ╔═╡ 964064c3-9c64-4162-b677-1065c6f2c793
+function facetlabelattributes(ax)
+	titlegap = ax.titlegap
+    
+    attributes = (
+        color=ax.titlecolor,
+        font=ax.titlefont,
+        textsize=ax.titlesize,
+    )
+	
+	(; titlegap, attributes)
 end
 
 # ╔═╡ bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
@@ -329,53 +338,55 @@ end
 first_nonempty_axis(aes) = first(get_nonempty_aes(aes)).axis
 
 # ╔═╡ de9557ce-bf84-4722-9a39-9ac12cf596e6
-function col_labels!(fig, aes, col_scale)
-	M, N = size(aes)
+function col_labels!(fig, aes, scale)
+	zipped_scale = zip(plotvalues(scale), datavalues(scale))
 	
-	ax = first_nonempty_axis(aes)
-    titlegap = ax.titlegap
-    
-    facetlabelattributes = (
-        color=ax.titlecolor,
-        font=ax.titlefont,
-        textsize=ax.titlesize,
-    )
-	
-	col_dict = Dict(zip(plotvalues(col_scale), datavalues(col_scale)))
-    labelpadding = lift(titlegap) do gap
+	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
+  	
+    facetlabelpadding = lift(titlegap) do gap
         return (0f0, 0f0, gap, 0f0)
     end
-    for n in 1:N
-		# Box(  fig[1, n, Top()], color = :lightgray)
-        Label(fig[1, n, Top()], string(col_dict[n]);
-        padding=labelpadding, facetlabelattributes...)
+	
+	for (index, label) in zipped_scale
+        Label(fig[1, index, Top()], string(label);
+        padding=facetlabelpadding, attributes...)
     end
 
 end
 
 # ╔═╡ cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
-function row_labels!(fig, aes, row_scale)
-	M, N = size(aes)
+function row_labels!(fig, aes, scale)
+	_, N = size(aes)
+	zipped_scale = zip(plotvalues(scale), datavalues(scale))
 
-	ax = first_nonempty_axis(aes)
-    titlegap = ax.titlegap
-
-    facetlabelattributes = (
-        color=ax.titlecolor,
-        font=ax.titlefont,
-        textsize=ax.titlesize,
-    )
+	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
 	
-	row_dict = Dict(zip(plotvalues(row_scale), datavalues(row_scale)))
     facetlabelpadding = lift(titlegap) do gap
         return (gap, 0f0, 0f0, 0f0)
     end
-    for m in 1:M
-		# Box(  fig[m, N, Right()], color = :lightgray)
-        Label(fig[m, N, Right()], string(row_dict[m]);
+	
+    for (index, label) in zipped_scale
+        Label(fig[index, N, Right()], string(label);
             rotation=-π/2, padding=facetlabelpadding,
-            facetlabelattributes...)
+            attributes...)
     end
+end
+
+# ╔═╡ 928928f3-9276-4ffe-b97f-1b340580e939
+function panel_labels!(fig, aes, scale)
+	zipped_scale = zip(plotvalues(scale), datavalues(scale))
+    
+	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
+	
+    facetlabelpadding = lift(titlegap) do gap
+        return (0f0, 0f0, gap, 0f0)
+    end
+	
+	for (index, label) in zipped_scale		
+		Label(fig[index..., Top()], string(label);
+			padding=facetlabelpadding, attributes...)
+	end
+	
 end
 
 # ╔═╡ 60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
@@ -395,13 +406,11 @@ function span_xlabel!(fig, aes)
     xlabelpadding = lift(protrusion, ax.xlabelpadding) do val, p
         return (0f0, 0f0, 0f0, val + p)
     end
-    xlabelcolor = ax.xlabelcolor
-    xlabelfont = ax.xlabelfont
-    xlabelsize = ax.xlabelsize
+	
     xlabelattributes = (
-        color=xlabelcolor,
-        font=xlabelfont,
-        textsize=xlabelsize,
+        color=ax.xlabelcolor,
+        font=ax.xlabelfont,
+        textsize=ax.xlabelsize,
     )
     Label(fig[M, :, Bottom()], ax.xlabel;
         padding=xlabelpadding, xlabelattributes...)
@@ -409,8 +418,6 @@ end
 
 # ╔═╡ ae691f50-df36-4d40-962f-ffbdff57a1b7
 function span_ylabel!(fig, aes)
-	M, N = size(aes)
-	
 	for ae in aes
         ae.axis.ylabelvisible[] = false
     end
@@ -426,13 +433,10 @@ function span_ylabel!(fig, aes)
         return (0f0, val + p, 0f0, 0f0)
     end
 	
-    ylabelcolor = ax.ylabelcolor
-    ylabelfont = ax.ylabelfont
-    ylabelsize = ax.ylabelsize
     ylabelattributes = (
-        color=ylabelcolor,
-        font=ylabelfont,
-        textsize=ylabelsize,
+        color=ax.ylabelcolor,
+        font=ax.ylabelfont,
+        textsize=ax.ylabelsize,
     )
     Label(fig[:, 1, Left()], ax.ylabel;
         rotation=π/2, padding=ylabelpadding, ylabelattributes...)
@@ -445,13 +449,13 @@ function facet_wrap!(fig, aes::AbstractMatrix{AxisEntries}; facet...)
     isnothing(scale) && return
 
 	# Link axes and hide decorations if appropriate
-	@unpack linkxaxes, linkyaxes, hidexdecorations, hideydecorations = facet_replace_defaults(aes, facet)
-	link_axes!(aes; linkxaxes, linkyaxes)
-	hide_decorations!(aes; hidexdecorations, hideydecorations)
+	attr = facet_replace_defaults(aes, facet)
+	link_axes!(aes; attr.linkxaxes, attr.linkyaxes)
+	hide_decorations!(aes; attr.hidexdecorations, attr.hideydecorations)
 
 	# delete empty axes
 	deleteemptyaxes!(aes)
-	panel_labels!(aes)
+	panel_labels!(fig, aes, scale)
 
 	# span axis labels if appropriate
     if consistent_ylabels(aes)
@@ -471,9 +475,9 @@ function facet_grid!(fig, aes::AbstractMatrix{AxisEntries}; facet...)
     all(isnothing, (row_scale, col_scale)) && return
 	
 	# Link axes and hide decorations if appropriate
-	@unpack linkxaxes, linkyaxes, hidexdecorations, hideydecorations = facet_replace_defaults(aes, facet)
-	link_axes!(aes; linkxaxes, linkyaxes)
-	hide_decorations!(aes; hidexdecorations, hideydecorations)
+	attr = facet_replace_defaults(aes, facet)
+	link_axes!(aes; attr.linkxaxes, attr.linkyaxes)
+	hide_decorations!(aes; attr.hidexdecorations, attr.hideydecorations)
 
 	# span axis labels if appropriate
     if !isnothing(row_scale) && consistent_ylabels(aes)
@@ -708,6 +712,11 @@ draw(
 	#facet = (; linkxaxes = :byrow, linkyaxes = :bycol) # chosen automatically
 	#facet = (; linkxaxes = :none, linkyaxes = :none)	
 )
+
+# ╔═╡ 636bb3f3-6c3a-4081-be00-f216e355a4d1
+draw(
+	plt_wide_layout
+	)
 
 # ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
 function draw_with_format(plt, filename=missing; 
@@ -1914,6 +1923,8 @@ version = "3.5.0+0"
 # ╟─31daa741-de80-4eb3-8ab3-5e761d814e81
 # ╠═687913f3-9e37-4a6a-bdef-2fa20dac8809
 # ╠═19e2f476-1b1a-4e8f-b85a-ccc0588e0df3
+# ╠═b54d7352-9959-4a47-a6d5-85ec576d55d0
+# ╠═636bb3f3-6c3a-4081-be00-f216e355a4d1
 # ╟─4c99f947-72c6-4b59-8472-687adc556cc6
 # ╠═0fb17c38-4309-46e4-b0a6-6d27c31bb412
 # ╟─714de7f2-8cac-4fcd-99ff-5735a309f234
@@ -1942,6 +1953,7 @@ version = "3.5.0+0"
 # ╟─a24e5aa3-7d10-4fe7-98e7-88025f4a8a36
 # ╠═e728b439-9367-4758-b9f7-4f96b21202fa
 # ╟─e8f4afb8-ee40-406a-8214-850b068bec9b
+# ╠═964064c3-9c64-4162-b677-1065c6f2c793
 # ╠═de9557ce-bf84-4722-9a39-9ac12cf596e6
 # ╠═cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
 # ╠═928928f3-9276-4ffe-b97f-1b340580e939
