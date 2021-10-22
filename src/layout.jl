@@ -17,7 +17,8 @@ begin
 	using Makie: Makie, lift, Figure, Axis, Legend, automatic
 	using Makie.MakieLayout: MakieLayout, linkxaxes!, linkyaxes!,
 		Label, Box, Top, Bottom, Left, Right, Mixed,
-		hideydecorations!, hidexdecorations!, hidedecorations!, hidespines!
+		hideydecorations!, hidexdecorations!, hidedecorations!, hidespines!,
+		Relative
 	using AlgebraOfGraphics: AlgebraOfGraphics,
 		AxisEntries, hideinnerdecorations!,
 		plotvalues, datavalues, deleteemptyaxes!
@@ -87,6 +88,20 @@ plt_wide = let
 	layers = linear() + visual(Scatter)
 	
 	data(df) * layers * mapping(xvars, yvars, col=dims(1), row=dims(2))
+end
+
+# ╔═╡ b54d7352-9959-4a47-a6d5-85ec576d55d0
+plt_wide_layout = let
+	df = (
+		sepal_length = 1 .+ rand(100), 
+		sepal_width = 2 .+ rand(100), 	
+		petal_length = 3 .+ rand(100),
+		petal_width = 4 .+ rand(100)
+	)
+	xvars = Symbol.(["sepal_length", "sepal_width", "petal_width"])
+	layers = linear() + visual(Scatter)
+	
+	data(df) * layers * mapping(xvars, :petal_length, layout=dims(1))
 end
 
 # ╔═╡ 4c99f947-72c6-4b59-8472-687adc556cc6
@@ -176,22 +191,17 @@ md"""
 ### Facet labels
 """
 
-# ╔═╡ 928928f3-9276-4ffe-b97f-1b340580e939
-function panel_labels!(aes)
-	# Add titles to axis (or delete axis if empty)
-	for ae in aes
-        ax = ae.axis
-        entries = ae.entries
-        vs = Iterators.filter(
-            !isnothing,
-            (get(entry.primary, :layout, nothing) for entry in entries)
-        )
-        it = iterate(vs)
-        if !isnothing(it)
-            v, _ = it
-            ax.title[] = string(v)
-        end
-    end
+# ╔═╡ 964064c3-9c64-4162-b677-1065c6f2c793
+function facetlabelattributes(ax)
+	titlegap = ax.titlegap
+    
+    attributes = (
+        color=ax.titlecolor,
+        font=ax.titlefont,
+        textsize=ax.titlesize,
+    )
+	
+	(; titlegap, attributes)
 end
 
 # ╔═╡ bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
@@ -328,53 +338,55 @@ end
 first_nonempty_axis(aes) = first(get_nonempty_aes(aes)).axis
 
 # ╔═╡ de9557ce-bf84-4722-9a39-9ac12cf596e6
-function col_labels!(fig, aes, col_scale)
-	M, N = size(aes)
+function col_labels!(fig, aes, scale)
+	zipped_scale = zip(plotvalues(scale), datavalues(scale))
 	
-	ax = first_nonempty_axis(aes)
-    titlegap = ax.titlegap
-    
-    facetlabelattributes = (
-        color=ax.titlecolor,
-        font=ax.titlefont,
-        textsize=ax.titlesize,
-    )
-	
-	col_dict = Dict(zip(plotvalues(col_scale), datavalues(col_scale)))
-    labelpadding = lift(titlegap) do gap
+	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
+  	
+    facetlabelpadding = lift(titlegap) do gap
         return (0f0, 0f0, gap, 0f0)
     end
-    for n in 1:N
-		# Box(  fig[1, n, Top()], color = :lightgray)
-        Label(fig[1, n, Top()], string(col_dict[n]);
-        padding=labelpadding, facetlabelattributes...)
+	
+	for (index, label) in zipped_scale
+        Label(fig[1, index, Top()], string(label);
+        padding=facetlabelpadding, attributes...)
     end
 
 end
 
 # ╔═╡ cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
-function row_labels!(fig, aes, row_scale)
-	M, N = size(aes)
+function row_labels!(fig, aes, scale)
+	_, N = size(aes)
+	zipped_scale = zip(plotvalues(scale), datavalues(scale))
 
-	ax = first_nonempty_axis(aes)
-    titlegap = ax.titlegap
-
-    facetlabelattributes = (
-        color=ax.titlecolor,
-        font=ax.titlefont,
-        textsize=ax.titlesize,
-    )
+	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
 	
-	row_dict = Dict(zip(plotvalues(row_scale), datavalues(row_scale)))
     facetlabelpadding = lift(titlegap) do gap
         return (gap, 0f0, 0f0, 0f0)
     end
-    for m in 1:M
-		# Box(  fig[m, N, Right()], color = :lightgray)
-        Label(fig[m, N, Right()], string(row_dict[m]);
+	
+    for (index, label) in zipped_scale
+        Label(fig[index, N, Right()], string(label);
             rotation=-π/2, padding=facetlabelpadding,
-            facetlabelattributes...)
+            attributes...)
     end
+end
+
+# ╔═╡ 928928f3-9276-4ffe-b97f-1b340580e939
+function panel_labels!(fig, aes, scale)
+	zipped_scale = zip(plotvalues(scale), datavalues(scale))
+    
+	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
+	
+    facetlabelpadding = lift(titlegap) do gap
+        return (0f0, 0f0, gap, 0f0)
+    end
+	
+	for (index, label) in zipped_scale		
+		Label(fig[index..., Top()], string(label);
+			padding=facetlabelpadding, attributes...)
+	end
+	
 end
 
 # ╔═╡ 60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
@@ -394,13 +406,11 @@ function span_xlabel!(fig, aes)
     xlabelpadding = lift(protrusion, ax.xlabelpadding) do val, p
         return (0f0, 0f0, 0f0, val + p)
     end
-    xlabelcolor = ax.xlabelcolor
-    xlabelfont = ax.xlabelfont
-    xlabelsize = ax.xlabelsize
+	
     xlabelattributes = (
-        color=xlabelcolor,
-        font=xlabelfont,
-        textsize=xlabelsize,
+        color=ax.xlabelcolor,
+        font=ax.xlabelfont,
+        textsize=ax.xlabelsize,
     )
     Label(fig[M, :, Bottom()], ax.xlabel;
         padding=xlabelpadding, xlabelattributes...)
@@ -408,8 +418,6 @@ end
 
 # ╔═╡ ae691f50-df36-4d40-962f-ffbdff57a1b7
 function span_ylabel!(fig, aes)
-	M, N = size(aes)
-	
 	for ae in aes
         ae.axis.ylabelvisible[] = false
     end
@@ -425,13 +433,10 @@ function span_ylabel!(fig, aes)
         return (0f0, val + p, 0f0, 0f0)
     end
 	
-    ylabelcolor = ax.ylabelcolor
-    ylabelfont = ax.ylabelfont
-    ylabelsize = ax.ylabelsize
     ylabelattributes = (
-        color=ylabelcolor,
-        font=ylabelfont,
-        textsize=ylabelsize,
+        color=ax.ylabelcolor,
+        font=ax.ylabelfont,
+        textsize=ax.ylabelsize,
     )
     Label(fig[:, 1, Left()], ax.ylabel;
         rotation=π/2, padding=ylabelpadding, ylabelattributes...)
@@ -444,13 +449,13 @@ function facet_wrap!(fig, aes::AbstractMatrix{AxisEntries}; facet...)
     isnothing(scale) && return
 
 	# Link axes and hide decorations if appropriate
-	@unpack linkxaxes, linkyaxes, hidexdecorations, hideydecorations = facet_replace_defaults(aes, facet)
-	link_axes!(aes; linkxaxes, linkyaxes)
-	hide_decorations!(aes; hidexdecorations, hideydecorations)
+	attr = facet_replace_defaults(aes, facet)
+	link_axes!(aes; attr.linkxaxes, attr.linkyaxes)
+	hide_decorations!(aes; attr.hidexdecorations, attr.hideydecorations)
 
 	# delete empty axes
 	deleteemptyaxes!(aes)
-	panel_labels!(aes)
+	panel_labels!(fig, aes, scale)
 
 	# span axis labels if appropriate
     if consistent_ylabels(aes)
@@ -470,9 +475,9 @@ function facet_grid!(fig, aes::AbstractMatrix{AxisEntries}; facet...)
     all(isnothing, (row_scale, col_scale)) && return
 	
 	# Link axes and hide decorations if appropriate
-	@unpack linkxaxes, linkyaxes, hidexdecorations, hideydecorations = facet_replace_defaults(aes, facet)
-	link_axes!(aes; linkxaxes, linkyaxes)
-	hide_decorations!(aes; hidexdecorations, hideydecorations)
+	attr = facet_replace_defaults(aes, facet)
+	link_axes!(aes; attr.linkxaxes, attr.linkyaxes)
+	hide_decorations!(aes; attr.hidexdecorations, attr.hideydecorations)
 
 	# span axis labels if appropriate
     if !isnothing(row_scale) && consistent_ylabels(aes)
@@ -495,8 +500,8 @@ end
 
 # ╔═╡ 7f7cadee-1b1a-4c60-969a-20d13b5f3361
 function draw!(fig, s::AlgebraOfGraphics.OneOrMoreLayers;
-               axis=NamedTuple(), palettes=NamedTuple(), facet = (;))
-    ag = AlgebraOfGraphics.plot!(fig, s; axis, palettes)
+               axis=(;), palettes=(;), facet=(;), legend=(;), colorbar=(;))
+    ag = AlgebraOfGraphics.plot!(fig, s; axis, palettes, legend)
     facet!(fig, ag; facet)
     return ag
 end
@@ -506,52 +511,116 @@ md"""
 ## Guides
 """
 
+# ╔═╡ 98ceb516-fd62-4194-9477-206e7b6a7710
+md"""
+### Position
+"""
+
+# ╔═╡ 052ca49c-83c1-4c82-8e1f-7f310afb3bb9
+function guides_position(fig::Figure, position)
+	if position == :bottom
+		#ax_pos 	 = fig[1,1] 
+		legs_pos = fig[end+1,:]
+	elseif position == :top
+		#ax_pos 	 = fig[2,1] 
+		legs_pos = fig[0,:]
+	elseif position == :right
+		#ax_pos   = fig[1,1]
+		legs_pos = fig[:,end+1]
+	elseif position == :left
+		#ax_pos   = fig[1,2]
+		legs_pos = fig[:,0]
+	end
+
+	legs_pos
+end
+
+# ╔═╡ 0c0f6402-7d7a-4e5a-b1f5-a625aa8cfe3c
+md"""
+### Legend attributes
+"""
+
+# ╔═╡ ade405b1-2a36-4a71-a010-5398a581474e
+default_orientation(position) = position in [:top, :bottom] ? :horizontal : :vertical
+
+# ╔═╡ b27a7b57-86bd-4430-b9f1-ba3104485757
+default_nbanks(orientation, has_colorbar) = has_colorbar && (orientation == :horizontal) ? 2 : 1
+
+# ╔═╡ 8266b1fc-afb1-409b-92aa-bda2be9bed85
+default_titleposition(orientation) = orientation == :horizontal ? :left : :top
+
+# ╔═╡ 75a78cef-a648-4cf1-a474-5d057e009a09
+function legend_attributes(legend_attr, has_colorbar)
+    legend_attr = Dict(pairs(legend_attr))
+    
+	position        = pop!(legend_attr, :position, :top)
+	orientation     = pop!(legend_attr, :orientation, default_orientation(position))
+	titleposition   = pop!(legend_attr, :titleposition, default_titleposition(orientation))
+	nbanks          = pop!(legend_attr, :nbanks, default_nbanks(orientation, has_colorbar))
+	tellwidth       = pop!(legend_attr, :tellwidth, position ∈ [:left, :right])
+	tellheight      = pop!(legend_attr, :tellwidth, position ∈ [:top, :bottom])
+
+    attr = (; position, orientation, titleposition, nbanks, tellwidth, tellheight, legend_attr...)
+end
+
 # ╔═╡ e84f7ba2-8c60-44c3-97e2-04b524a8420a
 begin
-	legend!(fg::AlgebraOfGraphics.FigureGrid; kwargs...) = legend!(fg.figure[:, end+1], fg; kwargs...)
+	function legend!(fg::AlgebraOfGraphics.FigureGrid; kwargs...)
+		
+		attr = legend_attributes(kwargs, false)
+		
+		guide_pos = guides_position(fg.figure::Figure, attr.position)
 
+		legend!(guide_pos, fg; attr...)
+	end
 	function legend!(figpos, grid; kwargs...)
         legend = AlgebraOfGraphics.compute_legend(grid)
     	return isnothing(legend) ? nothing : AlgebraOfGraphics.Legend(figpos, legend...; kwargs...)
 	end
 end
 
-# ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
-function draw_with_format(aog, filename=missing; 
-		nrow = 1 , ncol = 1,
-		axis = (;), palettes = (;), facet = (;),
-		legend = true
-	)
-    figure = (
-        resolution = round.(Int, (ncol * 240, nrow * 240)),
-    )
-	
-	fig = Figure(; figure...)
-	figpos = fig[1,1]
-	
-	fg = Makie.plot!(figpos, aog; axis, palettes)
-	facet!(figpos, fg; facet)
-	
-	if legend
-		legend = (
-			orientation = :horizontal,
-			framevisible = false,
-			titleposition = :left
-		)
-	
-		legend!(fig[0,1], fg; legend...)
-	end
+# ╔═╡ e44d21ec-de81-47cf-bd0b-5d673bf8da18
+md"""
+### Colorbar attributes
+"""
 
-	if !ismissing(filename)
-		save(plotsdir(filename), fig)
+# ╔═╡ d2421b5a-4e04-402c-8629-09834371e6c2
+function colorbar_attributes(attr)
+	attr = Dict(pairs(attr))
+    
+	position        = pop!(attr, :position, :top)
+	orientation     = pop!(attr, :orientation, default_orientation(position))
+	
+	vertical = orientation == :vertical
+	horizontal = !vertical
+	
+	if horizontal
+		cb_attributes = (
+			height = 18, width = Relative(1.0),
+			tellwidth = true,
+			vertical = vertical,
+			valign = :center,
+			ticksize = 5,
+  			ticklabelpad = 1.5)
+	else
+		cb_attributes = (
+			width = 18, height = Relative(1.0),
+			vertical = vertical,
+			halign = :center,
+	)	
 	end
-
-	fig
+	position, cb_attributes
 end
 
 # ╔═╡ e29999be-5413-403a-bb7a-32a0048ca10b
 begin
-	colorbar!(fg::AlgebraOfGraphics.FigureGrid; kwargs...) = colorbar!(fg.figure[:, end+1], fg; kwargs...)
+	function colorbar!(fg::AlgebraOfGraphics.FigureGrid; kwargs...)
+		pos, attr = colorbar_attributes(kwargs)
+		
+		guide_pos = guides_position(fg.figure::Figure, pos)
+		colorbar!(guide_pos, fg; attr...)
+		
+	end
 
 	function colorbar!(figpos, grid; kwargs...)
     	colorbar = AlgebraOfGraphics.compute_colorbar(grid)
@@ -561,11 +630,13 @@ end
 
 # ╔═╡ 5edecf9f-2d14-4274-afa2-ff99ce96f585
 function draw(s::AlgebraOfGraphics.OneOrMoreLayers;
-              axis = NamedTuple(), figure=NamedTuple(), palettes=NamedTuple(), facet=(;))
+              axis = (;), figure=(;), palettes=(;),
+              facet=(;), legend=(;), colorbar=(;)
+    )
     fg = AlgebraOfGraphics.plot(s; axis, figure, palettes)
     facet!(fg; facet)
-    colorbar!(fg)
-    legend!(fg)
+    colorbar!(fg; colorbar...)
+    legend!(fg; legend...)
     AlgebraOfGraphics.resizetocontent!(fg)
     return fg
 end
@@ -574,10 +645,15 @@ end
 let
 	@chain dta begin
 		data(_) * visual(Scatter) * mapping(
-			:x, :y, color = :c,
+			:x, :y, color = :x => "",
+			marker = :c,
 			row = :d
 		)
-		draw(facet = (; linkxaxes = automatic, linkyaxes = automatic))
+		draw(
+			facet = (; linkxaxes = automatic, linkyaxes = automatic),
+			legend = (; position = :right),
+			colorbar = (; position = :top)
+		)
 	end
 end
 
@@ -590,7 +666,8 @@ let
 		)
 		draw(;
 			#facet = (; linkxaxes = :all, linkyaxes = :all) # chosen automatically
-			facet = (; linkxaxes = :bycol, linkyaxes = :byrow) 
+			facet = (; linkxaxes = :bycol, linkyaxes = :byrow),
+			legend = (; position = :bottom)
 			#facet = (; linkxaxes = :none, linkyaxes = :none) # current behavior
 		)
 	end
@@ -635,6 +712,29 @@ draw(
 	#facet = (; linkxaxes = :byrow, linkyaxes = :bycol) # chosen automatically
 	#facet = (; linkxaxes = :none, linkyaxes = :none)	
 )
+
+# ╔═╡ 636bb3f3-6c3a-4081-be00-f216e355a4d1
+draw(
+	plt_wide_layout
+	)
+
+# ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
+function draw_with_format(plt, filename=missing; 
+		nrow = 1 , ncol = 1,
+		axis = (;), palettes = (;), facet = (;), legend = (;), colorbar = (;)
+	)
+    figure = (
+        resolution = round.(Int, (ncol * 240, nrow * 240)),
+    )
+	
+    fg = draw(plt; axis, palettes, facet, legend, colorbar)	
+
+	if !ismissing(filename)
+		save(plotsdir(filename), fg)
+	end
+
+	fg
+end
 
 # ╔═╡ 0d89ac09-4077-47b4-a653-0200c0b3a0e7
 md"""
@@ -1823,6 +1923,8 @@ version = "3.5.0+0"
 # ╟─31daa741-de80-4eb3-8ab3-5e761d814e81
 # ╠═687913f3-9e37-4a6a-bdef-2fa20dac8809
 # ╠═19e2f476-1b1a-4e8f-b85a-ccc0588e0df3
+# ╠═b54d7352-9959-4a47-a6d5-85ec576d55d0
+# ╠═636bb3f3-6c3a-4081-be00-f216e355a4d1
 # ╟─4c99f947-72c6-4b59-8472-687adc556cc6
 # ╠═0fb17c38-4309-46e4-b0a6-6d27c31bb412
 # ╟─714de7f2-8cac-4fcd-99ff-5735a309f234
@@ -1851,6 +1953,7 @@ version = "3.5.0+0"
 # ╟─a24e5aa3-7d10-4fe7-98e7-88025f4a8a36
 # ╠═e728b439-9367-4758-b9f7-4f96b21202fa
 # ╟─e8f4afb8-ee40-406a-8214-850b068bec9b
+# ╠═964064c3-9c64-4162-b677-1065c6f2c793
 # ╠═de9557ce-bf84-4722-9a39-9ac12cf596e6
 # ╠═cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
 # ╠═928928f3-9276-4ffe-b97f-1b340580e939
@@ -1863,6 +1966,15 @@ version = "3.5.0+0"
 # ╟─88988bc0-bbf5-47db-8727-5ed12e9b6510
 # ╠═e84f7ba2-8c60-44c3-97e2-04b524a8420a
 # ╠═e29999be-5413-403a-bb7a-32a0048ca10b
+# ╟─98ceb516-fd62-4194-9477-206e7b6a7710
+# ╠═052ca49c-83c1-4c82-8e1f-7f310afb3bb9
+# ╟─0c0f6402-7d7a-4e5a-b1f5-a625aa8cfe3c
+# ╠═75a78cef-a648-4cf1-a474-5d057e009a09
+# ╠═ade405b1-2a36-4a71-a010-5398a581474e
+# ╠═b27a7b57-86bd-4430-b9f1-ba3104485757
+# ╠═8266b1fc-afb1-409b-92aa-bda2be9bed85
+# ╟─e44d21ec-de81-47cf-bd0b-5d673bf8da18
+# ╠═d2421b5a-4e04-402c-8629-09834371e6c2
 # ╟─0d89ac09-4077-47b4-a653-0200c0b3a0e7
 # ╠═eca0c346-a488-46ec-9b56-51bc91724780
 # ╠═0b0295e3-d1ea-4ac7-8773-05ddcbf262c7
