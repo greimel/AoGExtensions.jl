@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.16.1
+# v0.16.3
 
 using Markdown
 using InteractiveUtils
@@ -9,7 +9,7 @@ begin
 	using Chain: @chain
 	using Makie: Scatter
 	import CairoMakie
-	using AlgebraOfGraphics: data, visual, mapping, linear, dims
+	using AlgebraOfGraphics: data, visual, mapping, linear, dims, draw, draw!
 end
 
 # ╔═╡ 0fb17c38-4309-46e4-b0a6-6d27c31bb412
@@ -19,13 +19,8 @@ begin
 		Label, Box, Top, Bottom, Left, Right, Mixed,
 		hideydecorations!, hidexdecorations!, hidedecorations!, hidespines!,
 		Relative
-	using AlgebraOfGraphics: AlgebraOfGraphics,
-		AxisEntries, hideinnerdecorations!,
-		plotvalues, datavalues, deleteemptyaxes!
+	using AlgebraOfGraphics: AlgebraOfGraphics
 end
-
-# ╔═╡ 44fda813-b5a5-463d-8b22-38809304272c
-using UnPack
 
 # ╔═╡ eca0c346-a488-46ec-9b56-51bc91724780
 using PlutoUI: TableOfContents
@@ -65,582 +60,6 @@ md"""
 ### Facet grid
 """
 
-# ╔═╡ f31ab3e7-c306-4b09-9da1-d0cc59dc3770
-md"""
-### Facet wrap
-"""
-
-# ╔═╡ 31daa741-de80-4eb3-8ab3-5e761d814e81
-md"""
-## Wide data -- facet grid
-"""
-
-# ╔═╡ 687913f3-9e37-4a6a-bdef-2fa20dac8809
-plt_wide = let
-	df = (
-		sepal_length = 1 .+ rand(100), 
-		sepal_width = 2 .+ rand(100), 	
-		petal_length = 3 .+ rand(100),
-		petal_width = 4 .+ rand(100)
-	)
-	xvars = Symbol.(["sepal_length", "sepal_width"])
-	yvars = Symbol.(["petal_length" "petal_width"])
-	layers = linear() + visual(Scatter)
-	
-	data(df) * layers * mapping(xvars, yvars, col=dims(1), row=dims(2))
-end
-
-# ╔═╡ b54d7352-9959-4a47-a6d5-85ec576d55d0
-plt_wide_layout = let
-	df = (
-		sepal_length = 1 .+ rand(100), 
-		sepal_width = 2 .+ rand(100), 	
-		petal_length = 3 .+ rand(100),
-		petal_width = 4 .+ rand(100)
-	)
-	xvars = Symbol.(["sepal_length", "sepal_width", "petal_width"])
-	layers = linear() + visual(Scatter)
-	
-	data(df) * layers * mapping(xvars, :petal_length, layout=dims(1))
-end
-
-# ╔═╡ 4c99f947-72c6-4b59-8472-687adc556cc6
-md"""
-# Implementation
-"""
-
-# ╔═╡ 714de7f2-8cac-4fcd-99ff-5735a309f234
-md"""
-## Draw
-"""
-
-# ╔═╡ 94d75889-c86b-40b3-a95d-f8795b9b52da
-md"""
-## Layout
-"""
-
-# ╔═╡ 979e5d9c-b094-4d39-aeb9-f49796ab7913
-md"""
-### Facet
-"""
-
-# ╔═╡ e2fc8766-e6eb-45c1-9688-76183c47e535
-function facet!(fg::AlgebraOfGraphics.FigureGrid; facet = (;))
-    facet!(fg.figure, fg.grid; facet)
-    return fg
-end
-
-# ╔═╡ 31f72d47-e04a-40c7-a5e8-14c24c2bf6be
-md"""
-### Facet wrap
-"""
-
-# ╔═╡ 32399581-fcc4-45f5-a70a-9031176fe853
-md"""
-### Facet grid
-"""
-
-# ╔═╡ ac6a796c-6a4d-4083-9589-f5645639ddf5
-md"""
-## Helpers
-"""
-
-# ╔═╡ 907a9267-86e4-4094-87e5-03e0fcd156ff
-md"""
-### Link axes
-"""
-
-# ╔═╡ 1ae3fb24-e098-48cd-a6fa-56ab2f2144a4
-function link_rows!(aes)
-    M, N = size(aes)
-    for i in 1:M
-        linkyaxes!(aes[i,:]...)
-    end
-end
-
-# ╔═╡ 7bbd9c3b-9ce8-41d3-bdc9-ba6ead949a8a
-function link_cols!(aes)
-    M, N = size(aes)
-    for i in 1:N
-        linkxaxes!(aes[:,i]...)
-    end
-end
-
-# ╔═╡ 533eea56-6118-4c54-8dfa-4b245c76eec0
-function link_axes!(aes; linkxaxes, linkyaxes)
-    if linkxaxes == :all
-        linkxaxes!(aes...)
-	elseif linkxaxes == :bycol
-        link_cols!(aes)
-    end
-
-    if linkyaxes == :all
-        linkyaxes!(aes...)
-	elseif linkyaxes == :byrow
-        link_rows!(aes)
-    end
-end
-
-# ╔═╡ a24e5aa3-7d10-4fe7-98e7-88025f4a8a36
-md"""
-### Hide decorations
-"""
-
-# ╔═╡ e8f4afb8-ee40-406a-8214-850b068bec9b
-md"""
-### Facet labels
-"""
-
-# ╔═╡ 964064c3-9c64-4162-b677-1065c6f2c793
-function facetlabelattributes(ax)
-	titlegap = ax.titlegap
-    
-    attributes = (
-        color=ax.titlecolor,
-        font=ax.titlefont,
-        textsize=ax.titlesize,
-    )
-	
-	(; titlegap, attributes)
-end
-
-# ╔═╡ bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
-md"""
-### Span axis labels
-"""
-
-# ╔═╡ 26191f8b-98b4-4a86-9d9c-92917491fb4e
-empty_ae(ae) = isempty(ae.entries)
-
-# ╔═╡ e728b439-9367-4758-b9f7-4f96b21202fa
-function hide_decorations!(aes; hidexdecorations, hideydecorations)
-	I, J = size(aes)
-		
-	if hideydecorations
-		hideydecorations!.(aes[:, 2:end], grid = false)
-	end
-	
-	if hidexdecorations
-		for i in 1:I, j in 1:J
-			# don't hide x decorations if axis below is empty
-			below_empty = (i < I) && empty_ae(aes[i+1,j])
-			
-			if (i < I) && !below_empty
-				hidexdecorations!(aes[i,j],
-					grid = false,
-					ticks = hidexdecorations,
-					ticklabels = hidexdecorations
-				)
-			end
-
-			if (i < I) && below_empty
-				# improve appearance with empty axes
-				aes[i,j].axis.alignmode = Mixed(bottom = MakieLayout.GridLayoutBase.Protrusion(0))
-			end
-		end
-	end
-end
-
-# ╔═╡ 657177fb-01c0-4b65-bec9-8d324574fe57
-get_nonempty_aes(aes) = filter(!empty_ae, aes)
-
-# ╔═╡ 80f3de1f-1587-49cc-b4a4-a4e4a8c074fb
-function consistent_xlabels(aes)
-    nonempty_aes = get_nonempty_aes(aes)
-    ax = first(nonempty_aes).axis
-    return all(ae -> ae.axis.xlabel[] == ax.xlabel[], nonempty_aes)
-end
-
-# ╔═╡ 1911ebd8-be9f-4b7c-b1b2-6c0357a4b7bb
-function consistent_xlabels_byrow(aes)
-    M, N = size(aes)
-    all(consistent_xlabels(aes[:,i]) for i in 1:N)
-end
-
-# ╔═╡ a9ceadf0-f00a-43ec-854f-85c87e4dfa04
-function consistent_ylabels(aes)
-    nonempty_aes = get_nonempty_aes(aes)
-    ax = first(nonempty_aes).axis
-    return all(ae -> ae.axis.ylabel[] == ax.ylabel[], nonempty_aes)
-end
-
-# ╔═╡ 7d281ddd-5459-4433-b214-3da71bde9f67
-function consistent_ylabels_bycol(aes)
-    M, N = size(aes)
-    all(consistent_ylabels(aes[i,:]) for i in 1:M)
-end
-
-# ╔═╡ 6cc554ad-00d8-4dae-a19a-1dde17551607
-function facet_replace_defaults(aes, facet)
-    linkxaxes = get(facet, :linkxaxes, automatic)
-    linkyaxes = get(facet, :linkyaxes, automatic)
-    hidexdecorations = get(facet, :hidexdecorations, automatic)
-    hideydecorations = get(facet, :hideydecorations, automatic)
-
-    if linkxaxes ∉ [:all, :bycol, :none, true, false, automatic]
-        @warn "Replaced invalid keyword linkxaxes = $linkxaxes by automatic"
-        linkxaxes = automatic
-    end
-
-    if linkyaxes ∉ [:all, :byrow, :none, :true, false, automatic] 
-        @warn "Replaced invalid keyword linkyaxes = $linkyaxes by automatic"
-        linkyaxes = automatic
-    end
-
-    if hidexdecorations ∉ [true, false, automatic]
-        @warn "Replaced invalid keyword hidexdecorations = $hidexdecorations by automatic"
-        hidexdecorations = automatic
-    end
-
-    if hideydecorations ∉ [:all, :bycol, :none, :true, false, automatic] 
-        @warn "Replaced invalid keyword hideydecorations = $hideydecorations by automatic"
-        hideydecorations = automatic
-    end
-
-    if linkxaxes ∈ [automatic, true]
-        if consistent_xlabels(aes)
-            linkxaxes = :all
-        elseif consistent_xlabels_byrow(aes)
-            linkxaxes = :bycol
-		 else
-         	linkxaxes = :none
-		 end
-    end
-
-    if linkyaxes ∈ [automatic, true]
-        if consistent_ylabels(aes)
-            linkyaxes = :all
-        elseif consistent_ylabels_bycol(aes)
-            linkyaxes = :byrow
-        else
-            linkyaxes = :none
-        end
-    end
-
-    if linkxaxes == false
-		linkxaxes = :none
-	end
-    if linkyaxes == false
-		linkyaxes = :none
-	end
-
-	if hidexdecorations === automatic
-		hidexdecorations = (linkxaxes != :none)
-	end
-	if hideydecorations === automatic
-		hideydecorations = (linkyaxes != :none)
-	end
-
-    (; linkxaxes, linkyaxes, hidexdecorations, hideydecorations)
-end
-
-# ╔═╡ 81019d80-ee18-41ae-8e37-cbeaecebbfc3
-first_nonempty_axis(aes) = first(get_nonempty_aes(aes)).axis
-
-# ╔═╡ de9557ce-bf84-4722-9a39-9ac12cf596e6
-function col_labels!(fig, aes, scale)
-	zipped_scale = zip(plotvalues(scale), datavalues(scale))
-	
-	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
-  	
-    facetlabelpadding = lift(titlegap) do gap
-        return (0f0, 0f0, gap, 0f0)
-    end
-	
-	for (index, label) in zipped_scale
-        Label(fig[1, index, Top()], string(label);
-        padding=facetlabelpadding, attributes...)
-    end
-
-end
-
-# ╔═╡ cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
-function row_labels!(fig, aes, scale)
-	_, N = size(aes)
-	zipped_scale = zip(plotvalues(scale), datavalues(scale))
-
-	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
-	
-    facetlabelpadding = lift(titlegap) do gap
-        return (gap, 0f0, 0f0, 0f0)
-    end
-	
-    for (index, label) in zipped_scale
-        Label(fig[index, N, Right()], string(label);
-            rotation=-π/2, padding=facetlabelpadding,
-            attributes...)
-    end
-end
-
-# ╔═╡ 928928f3-9276-4ffe-b97f-1b340580e939
-function panel_labels!(fig, aes, scale)
-	zipped_scale = zip(plotvalues(scale), datavalues(scale))
-    
-	titlegap, attributes = facetlabelattributes(first_nonempty_axis(aes))
-	
-    facetlabelpadding = lift(titlegap) do gap
-        return (0f0, 0f0, gap, 0f0)
-    end
-	
-	for (index, label) in zipped_scale		
-		Label(fig[index..., Top()], string(label);
-			padding=facetlabelpadding, attributes...)
-	end
-	
-end
-
-# ╔═╡ 60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
-function span_xlabel!(fig, aes)
-	M, N = size(aes)
-	
-	for ae in aes
-    	ae.axis.xlabelvisible[] = false
-    end
-    protrusion = lift(
-        (xs...) -> maximum(x -> x.bottom, xs),
-        (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[M, :])...
-    )
-
-	ax = first_nonempty_axis(aes)
-	
-    xlabelpadding = lift(protrusion, ax.xlabelpadding) do val, p
-        return (0f0, 0f0, 0f0, val + p)
-    end
-	
-    xlabelattributes = (
-        color=ax.xlabelcolor,
-        font=ax.xlabelfont,
-        textsize=ax.xlabelsize,
-    )
-    Label(fig[M, :, Bottom()], ax.xlabel;
-        padding=xlabelpadding, xlabelattributes...)
-end
-
-# ╔═╡ ae691f50-df36-4d40-962f-ffbdff57a1b7
-function span_ylabel!(fig, aes)
-	for ae in aes
-        ae.axis.ylabelvisible[] = false
-    end
-    
-    protrusion = lift(
-        (xs...) -> maximum(x -> x.left, xs),
-        (MakieLayout.protrusionsobservable(ae.axis) for ae in aes[:, 1])...
-    )
-    # TODO: here and below, set in such a way that one can change padding after the fact?
-    ax = first_nonempty_axis(aes)
-	
-	ylabelpadding = lift(protrusion, ax.ylabelpadding) do val, p
-        return (0f0, val + p, 0f0, 0f0)
-    end
-	
-    ylabelattributes = (
-        color=ax.ylabelcolor,
-        font=ax.ylabelfont,
-        textsize=ax.ylabelsize,
-    )
-    Label(fig[:, 1, Left()], ax.ylabel;
-        rotation=π/2, padding=ylabelpadding, ylabelattributes...)
-end
-
-# ╔═╡ 7c95182b-1567-49dc-9265-fdfc9c402031
-function facet_wrap!(fig, aes::AbstractMatrix{AxisEntries}; facet...)
-	
-    scale = get(aes[1].scales, :layout, nothing)
-    isnothing(scale) && return
-
-	# Link axes and hide decorations if appropriate
-	attr = facet_replace_defaults(aes, facet)
-	link_axes!(aes; attr.linkxaxes, attr.linkyaxes)
-	hide_decorations!(aes; attr.hidexdecorations, attr.hideydecorations)
-
-	# delete empty axes
-	deleteemptyaxes!(aes)
-	panel_labels!(fig, aes, scale)
-
-	# span axis labels if appropriate
-    if consistent_ylabels(aes)
-		span_ylabel!(fig, aes)
-	end
-    if consistent_xlabels(aes)
-		span_xlabel!(fig, aes)
-	end
-	
-    return
-end
-
-# ╔═╡ e596ba42-8e27-4054-a601-a867fbd1e45c
-function facet_grid!(fig, aes::AbstractMatrix{AxisEntries}; facet...)
-    M, N = size(aes)
-    row_scale, col_scale = map(sym -> get(aes[1].scales, sym, nothing), (:row, :col))
-    all(isnothing, (row_scale, col_scale)) && return
-	
-	# Link axes and hide decorations if appropriate
-	attr = facet_replace_defaults(aes, facet)
-	link_axes!(aes; attr.linkxaxes, attr.linkyaxes)
-	hide_decorations!(aes; attr.hidexdecorations, attr.hideydecorations)
-
-	# span axis labels if appropriate
-    if !isnothing(row_scale) && consistent_ylabels(aes)
-		span_ylabel!(fig, aes)
-		row_labels!(fig, aes, row_scale)
-	end
-    if !isnothing(col_scale) && consistent_xlabels(aes)
-		span_xlabel!(fig, aes)
-		col_labels!(fig, aes, col_scale)
-	end
-    return
-end
-
-# ╔═╡ f309f583-b205-4c6f-af3b-fa94deabc5e2
-function facet!(fig, aes::AbstractMatrix{AxisEntries}; facet = (;))
-    facet_wrap!(fig, aes; facet...)
-    facet_grid!(fig, aes; facet...)
-    return
-end
-
-# ╔═╡ 7f7cadee-1b1a-4c60-969a-20d13b5f3361
-function draw!(fig, s::AlgebraOfGraphics.OneOrMoreLayers;
-               axis=(;), palettes=(;), facet=(;), legend=(;), colorbar=(;))
-    ag = AlgebraOfGraphics.plot!(fig, s; axis, palettes, legend)
-    facet!(fig, ag; facet)
-    return ag
-end
-
-# ╔═╡ 88988bc0-bbf5-47db-8727-5ed12e9b6510
-md"""
-## Guides
-"""
-
-# ╔═╡ 98ceb516-fd62-4194-9477-206e7b6a7710
-md"""
-### Position
-"""
-
-# ╔═╡ 052ca49c-83c1-4c82-8e1f-7f310afb3bb9
-function guides_position(fig::Figure, position)
-	if position == :bottom
-		#ax_pos 	 = fig[1,1] 
-		legs_pos = fig[end+1,:]
-	elseif position == :top
-		#ax_pos 	 = fig[2,1] 
-		legs_pos = fig[0,:]
-	elseif position == :right
-		#ax_pos   = fig[1,1]
-		legs_pos = fig[:,end+1]
-	elseif position == :left
-		#ax_pos   = fig[1,2]
-		legs_pos = fig[:,0]
-	end
-
-	legs_pos
-end
-
-# ╔═╡ 0c0f6402-7d7a-4e5a-b1f5-a625aa8cfe3c
-md"""
-### Legend attributes
-"""
-
-# ╔═╡ ade405b1-2a36-4a71-a010-5398a581474e
-default_orientation(position) = position in [:top, :bottom] ? :horizontal : :vertical
-
-# ╔═╡ b27a7b57-86bd-4430-b9f1-ba3104485757
-default_nbanks(orientation, has_colorbar) = has_colorbar && (orientation == :horizontal) ? 2 : 1
-
-# ╔═╡ 8266b1fc-afb1-409b-92aa-bda2be9bed85
-default_titleposition(orientation) = orientation == :horizontal ? :left : :top
-
-# ╔═╡ 75a78cef-a648-4cf1-a474-5d057e009a09
-function legend_attributes(legend_attr, has_colorbar)
-    legend_attr = Dict(pairs(legend_attr))
-    
-	position        = pop!(legend_attr, :position, :top)
-	orientation     = pop!(legend_attr, :orientation, default_orientation(position))
-	titleposition   = pop!(legend_attr, :titleposition, default_titleposition(orientation))
-	nbanks          = pop!(legend_attr, :nbanks, default_nbanks(orientation, has_colorbar))
-	tellwidth       = pop!(legend_attr, :tellwidth, position ∈ [:left, :right])
-	tellheight      = pop!(legend_attr, :tellwidth, position ∈ [:top, :bottom])
-
-    attr = (; position, orientation, titleposition, nbanks, tellwidth, tellheight, legend_attr...)
-end
-
-# ╔═╡ e84f7ba2-8c60-44c3-97e2-04b524a8420a
-begin
-	function legend!(fg::AlgebraOfGraphics.FigureGrid; kwargs...)
-		
-		attr = legend_attributes(kwargs, false)
-		
-		guide_pos = guides_position(fg.figure::Figure, attr.position)
-
-		legend!(guide_pos, fg; attr...)
-	end
-	function legend!(figpos, grid; kwargs...)
-        legend = AlgebraOfGraphics.compute_legend(grid)
-    	return isnothing(legend) ? nothing : AlgebraOfGraphics.Legend(figpos, legend...; kwargs...)
-	end
-end
-
-# ╔═╡ e44d21ec-de81-47cf-bd0b-5d673bf8da18
-md"""
-### Colorbar attributes
-"""
-
-# ╔═╡ d2421b5a-4e04-402c-8629-09834371e6c2
-function colorbar_attributes(attr)
-	attr = Dict(pairs(attr))
-    
-	position        = pop!(attr, :position, :top)
-	orientation     = pop!(attr, :orientation, default_orientation(position))
-	
-	vertical = orientation == :vertical
-	horizontal = !vertical
-	
-	if horizontal
-		cb_attributes = (
-			height = 18, width = Relative(1.0),
-			tellwidth = true,
-			vertical = vertical,
-			valign = :center,
-			ticksize = 5,
-  			ticklabelpad = 1.5)
-	else
-		cb_attributes = (
-			width = 18, height = Relative(1.0),
-			vertical = vertical,
-			halign = :center,
-	)	
-	end
-	position, cb_attributes
-end
-
-# ╔═╡ e29999be-5413-403a-bb7a-32a0048ca10b
-begin
-	function colorbar!(fg::AlgebraOfGraphics.FigureGrid; kwargs...)
-		pos, attr = colorbar_attributes(kwargs)
-		
-		guide_pos = guides_position(fg.figure::Figure, pos)
-		colorbar!(guide_pos, fg; attr...)
-		
-	end
-
-	function colorbar!(figpos, grid; kwargs...)
-    	colorbar = AlgebraOfGraphics.compute_colorbar(grid)
-    	return isnothing(colorbar) ? nothing : AlgebraOfGraphics.Colorbar(figpos; colorbar..., kwargs...)
-	end
-end
-
-# ╔═╡ 5edecf9f-2d14-4274-afa2-ff99ce96f585
-function draw(s::AlgebraOfGraphics.OneOrMoreLayers;
-              axis = (;), figure=(;), palettes=(;),
-              facet=(;), legend=(;), colorbar=(;)
-    )
-    fg = AlgebraOfGraphics.plot(s; axis, figure, palettes)
-    facet!(fg; facet)
-    colorbar!(fg; colorbar...)
-    legend!(fg; legend...)
-    AlgebraOfGraphics.resizetocontent!(fg)
-    return fg
-end
-
 # ╔═╡ 6249a816-c687-4bbd-aa1b-190bec8d8442
 let
 	@chain dta begin
@@ -667,7 +86,7 @@ let
 		draw(;
 			#facet = (; linkxaxes = :all, linkyaxes = :all) # chosen automatically
 			facet = (; linkxaxes = :bycol, linkyaxes = :byrow),
-			legend = (; position = :bottom)
+			legend = (; position = :bottom, titleposition = :left, framevisible = false)
 			#facet = (; linkxaxes = :none, linkyaxes = :none) # current behavior
 		)
 	end
@@ -689,6 +108,11 @@ let
 	end
 end
 
+# ╔═╡ f31ab3e7-c306-4b09-9da1-d0cc59dc3770
+md"""
+### Facet wrap
+"""
+
 # ╔═╡ 435effd0-fdfa-40b4-aaa6-abd62f340f45
 let
 	ax = @chain dta begin
@@ -704,6 +128,26 @@ let
 	end
 end
 
+# ╔═╡ 31daa741-de80-4eb3-8ab3-5e761d814e81
+md"""
+## Wide data -- facet grid
+"""
+
+# ╔═╡ 687913f3-9e37-4a6a-bdef-2fa20dac8809
+plt_wide = let
+	df = (
+		sepal_length = 1 .+ rand(100), 
+		sepal_width = 2 .+ rand(100), 	
+		petal_length = 3 .+ rand(100),
+		petal_width = 4 .+ rand(100)
+	)
+	xvars = Symbol.(["sepal_length", "sepal_width"])
+	yvars = Symbol.(["petal_length" "petal_width"])
+	layers = linear() + visual(Scatter)
+	
+	data(df) * layers * mapping(xvars, yvars, col=dims(1), row=dims(2))
+end
+
 # ╔═╡ 19e2f476-1b1a-4e8f-b85a-ccc0588e0df3
 draw(
 	plt_wide,
@@ -713,10 +157,34 @@ draw(
 	#facet = (; linkxaxes = :none, linkyaxes = :none)	
 )
 
+# ╔═╡ b54d7352-9959-4a47-a6d5-85ec576d55d0
+plt_wide_layout = let
+	df = (
+		sepal_length = 1 .+ rand(100), 
+		sepal_width = 2 .+ rand(100), 	
+		petal_length = 3 .+ rand(100),
+		petal_width = 4 .+ rand(100)
+	)
+	xvars = Symbol.(["sepal_length", "sepal_width", "petal_width"])
+	layers = linear() + visual(Scatter)
+	
+	data(df) * layers * mapping(xvars, :petal_length, layout=dims(1))
+end
+
 # ╔═╡ 636bb3f3-6c3a-4081-be00-f216e355a4d1
 draw(
 	plt_wide_layout
 	)
+
+# ╔═╡ 4c99f947-72c6-4b59-8472-687adc556cc6
+md"""
+# Implementation
+"""
+
+# ╔═╡ 714de7f2-8cac-4fcd-99ff-5735a309f234
+md"""
+## Draw
+"""
 
 # ╔═╡ 52f68434-1e58-4f9c-9824-94e4178bc86b
 function draw_with_format(plt, filename=missing; 
@@ -736,6 +204,11 @@ function draw_with_format(plt, filename=missing;
 	fg
 end
 
+# ╔═╡ 88988bc0-bbf5-47db-8727-5ed12e9b6510
+md"""
+## Guides
+"""
+
 # ╔═╡ 0d89ac09-4077-47b4-a653-0200c0b3a0e7
 md"""
 # Appendix
@@ -752,22 +225,19 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
-AlgebraOfGraphics = "~0.5.4"
 CairoMakie = "~0.6.5"
 Chain = "~0.4.8"
 Makie = "~0.15.2"
 PlutoUI = "~0.7.14"
-UnPack = "~1.0.2"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.7.0-rc1"
+julia_version = "1.7.0-rc2.0"
 manifest_format = "2.0"
 
 [[deps.AbstractFFTs]]
@@ -789,9 +259,9 @@ version = "3.3.1"
 
 [[deps.AlgebraOfGraphics]]
 deps = ["Colors", "Dates", "FileIO", "GLM", "GeoInterface", "GeometryBasics", "GridLayoutBase", "KernelDensity", "Loess", "Makie", "PlotUtils", "PooledArrays", "RelocatableFolders", "StatsBase", "StructArrays", "Tables"]
-git-tree-sha1 = "3746ac120f8b163dbd3bda0f36b6dec20c4f795a"
+git-tree-sha1 = "a79d1facb9fb0cd858e693088aa366e328109901"
 uuid = "cbdf2221-f076-402e-a563-3d30da359d67"
-version = "0.5.4"
+version = "0.6.0"
 
 [[deps.Animations]]
 deps = ["Colors"]
@@ -938,9 +408,9 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
-git-tree-sha1 = "9f46deb4d4ee4494ffb5a40a27a2aced67bdd838"
+git-tree-sha1 = "09d9eaef9ef719d2cd5d928a191dc95be2ec8059"
 uuid = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
-version = "0.10.4"
+version = "0.10.5"
 
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
@@ -1070,9 +540,9 @@ version = "1.5.1"
 
 [[deps.GeoInterface]]
 deps = ["RecipesBase"]
-git-tree-sha1 = "38a649e6a52d1bea9844b382343630ac754c931c"
+git-tree-sha1 = "f63297cb6a2d2c403d18b3a3e0b7fcb01c0a3f40"
 uuid = "cf35fbd7-0cd7-5166-be24-54bfbe79505f"
-version = "0.5.5"
+version = "0.5.6"
 
 [[deps.GeometryBasics]]
 deps = ["EarCut_jll", "IterTools", "LinearAlgebra", "StaticArrays", "StructArrays", "Tables"]
@@ -1563,7 +1033,7 @@ deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[deps.Random]]
-deps = ["Serialization"]
+deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[deps.Ratios]]
@@ -1710,9 +1180,9 @@ version = "0.9.12"
 
 [[deps.StatsModels]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "Printf", "REPL", "ShiftedArrays", "SparseArrays", "StatsBase", "StatsFuns", "Tables"]
-git-tree-sha1 = "1bc8cc83e458c8a5036ec7206a04d749b9729fe8"
+git-tree-sha1 = "5cfe2d754634d9f11ae19e7b45dad3f8e4883f54"
 uuid = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
-version = "0.6.26"
+version = "0.6.27"
 
 [[deps.StructArrays]]
 deps = ["Adapt", "DataAPI", "StaticArrays", "Tables"]
@@ -1769,11 +1239,6 @@ version = "0.9.6"
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
-
-[[deps.UnPack]]
-git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
-uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
-version = "1.0.2"
 
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
@@ -1928,53 +1393,8 @@ version = "3.5.0+0"
 # ╟─4c99f947-72c6-4b59-8472-687adc556cc6
 # ╠═0fb17c38-4309-46e4-b0a6-6d27c31bb412
 # ╟─714de7f2-8cac-4fcd-99ff-5735a309f234
-# ╠═5edecf9f-2d14-4274-afa2-ff99ce96f585
-# ╠═7f7cadee-1b1a-4c60-969a-20d13b5f3361
 # ╠═52f68434-1e58-4f9c-9824-94e4178bc86b
-# ╟─94d75889-c86b-40b3-a95d-f8795b9b52da
-# ╟─979e5d9c-b094-4d39-aeb9-f49796ab7913
-# ╠═f309f583-b205-4c6f-af3b-fa94deabc5e2
-# ╠═e2fc8766-e6eb-45c1-9688-76183c47e535
-# ╟─31f72d47-e04a-40c7-a5e8-14c24c2bf6be
-# ╠═44fda813-b5a5-463d-8b22-38809304272c
-# ╠═7c95182b-1567-49dc-9265-fdfc9c402031
-# ╟─32399581-fcc4-45f5-a70a-9031176fe853
-# ╠═e596ba42-8e27-4054-a601-a867fbd1e45c
-# ╟─ac6a796c-6a4d-4083-9589-f5645639ddf5
-# ╠═6cc554ad-00d8-4dae-a19a-1dde17551607
-# ╠═80f3de1f-1587-49cc-b4a4-a4e4a8c074fb
-# ╠═a9ceadf0-f00a-43ec-854f-85c87e4dfa04
-# ╠═1911ebd8-be9f-4b7c-b1b2-6c0357a4b7bb
-# ╠═7d281ddd-5459-4433-b214-3da71bde9f67
-# ╟─907a9267-86e4-4094-87e5-03e0fcd156ff
-# ╠═533eea56-6118-4c54-8dfa-4b245c76eec0
-# ╠═1ae3fb24-e098-48cd-a6fa-56ab2f2144a4
-# ╠═7bbd9c3b-9ce8-41d3-bdc9-ba6ead949a8a
-# ╟─a24e5aa3-7d10-4fe7-98e7-88025f4a8a36
-# ╠═e728b439-9367-4758-b9f7-4f96b21202fa
-# ╟─e8f4afb8-ee40-406a-8214-850b068bec9b
-# ╠═964064c3-9c64-4162-b677-1065c6f2c793
-# ╠═de9557ce-bf84-4722-9a39-9ac12cf596e6
-# ╠═cf8d6fbc-363e-4202-9fbf-e8a8df4a42f9
-# ╠═928928f3-9276-4ffe-b97f-1b340580e939
-# ╟─bf9f4a23-d31f-4ade-8ebb-5011c3e15de6
-# ╠═60564a4f-7e20-4e6b-90d6-c0c6d2c85d84
-# ╠═ae691f50-df36-4d40-962f-ffbdff57a1b7
-# ╠═26191f8b-98b4-4a86-9d9c-92917491fb4e
-# ╠═657177fb-01c0-4b65-bec9-8d324574fe57
-# ╠═81019d80-ee18-41ae-8e37-cbeaecebbfc3
 # ╟─88988bc0-bbf5-47db-8727-5ed12e9b6510
-# ╠═e84f7ba2-8c60-44c3-97e2-04b524a8420a
-# ╠═e29999be-5413-403a-bb7a-32a0048ca10b
-# ╟─98ceb516-fd62-4194-9477-206e7b6a7710
-# ╠═052ca49c-83c1-4c82-8e1f-7f310afb3bb9
-# ╟─0c0f6402-7d7a-4e5a-b1f5-a625aa8cfe3c
-# ╠═75a78cef-a648-4cf1-a474-5d057e009a09
-# ╠═ade405b1-2a36-4a71-a010-5398a581474e
-# ╠═b27a7b57-86bd-4430-b9f1-ba3104485757
-# ╠═8266b1fc-afb1-409b-92aa-bda2be9bed85
-# ╟─e44d21ec-de81-47cf-bd0b-5d673bf8da18
-# ╠═d2421b5a-4e04-402c-8629-09834371e6c2
 # ╟─0d89ac09-4077-47b4-a653-0200c0b3a0e7
 # ╠═eca0c346-a488-46ec-9b56-51bc91724780
 # ╠═0b0295e3-d1ea-4ac7-8773-05ddcbf262c7

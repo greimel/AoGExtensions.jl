@@ -1,7 +1,7 @@
 name = "AoGExtensions"
 uuid = "7df18d33-496e-4cfd-8564-72cba2c0b329"
 authors = ["Fabian Greimel <fabgrei@gmail.com> and contributors"]
-version = "0.1.4"
+version = "0.1.5"
 
 [deps]
 AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
@@ -20,7 +20,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
-AlgebraOfGraphics = "0.5"
+AlgebraOfGraphics = "0.6"
 CairoMakie = "0.6"
 CategoricalArrays = "0.10"
 Chain = "0.4"
