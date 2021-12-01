@@ -44,7 +44,6 @@ function _quantile_band_(x, y, weights; lower, upper)
 	else
 		df = DataFrame(; x, y, weights = weights) |> dropmissing
 		df.weights = Weights(df.weights)
-		@show typeof(df.weights)
 	end
 
 	#return df
@@ -115,7 +114,6 @@ begin
 			else
 				df = DataFrame(; x, y, weights) |> dropmissing
 				df.weights = Weights(df.weights)
-				@show typeof(df.weights)
 			end
 			format(a, b, i; kwargs...) = "$i"
 			q = quantile(df.x, df.weights, 0:1/nbins:1)
