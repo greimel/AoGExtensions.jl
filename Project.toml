@@ -21,7 +21,7 @@ UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
 AlgebraOfGraphics = "0.6"
-CairoMakie = "0.6"
+CairoMakie = "0.6, 0.7"
 CategoricalArrays = "0.10"
 Chain = "0.4"
 DataFrameMacros = "0.1"
