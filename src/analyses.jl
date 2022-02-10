@@ -31,6 +31,9 @@ end
 # ╔═╡ 2287fdaf-9b5a-4b2b-a88b-a0b056d932bc
 using PlutoUI: TableOfContents
 
+# ╔═╡ 4e7aadb1-fb77-4a72-af43-6b6bd7ae0341
+using PlutoTest: @skip_as_script
+
 # ╔═╡ 7c6db864-0c85-4879-9f13-53ebb478ddf4
 md"""
 # Quantile Bandplot
@@ -80,7 +83,7 @@ begin
 end
 
 # ╔═╡ 7d144c3f-bfac-45b4-bc68-b4bfcb6bb46d
-let
+@skip_as_script let
 	x = rand(1:10, 100)
 	@chain x begin
 		(x = _, y = _ .+ 2 .* rand.())
@@ -135,7 +138,7 @@ begin
 end
 
 # ╔═╡ 0159f2db-0ac5-47fb-9d2b-e781eeadef2c
-@chain begin
+@skip_as_script @chain begin
 	(x = rand(100000), y = rand(100000))
 	data(_) * binscatter() * mapping(:x, :y)
 	draw
@@ -160,6 +163,7 @@ DataFrameMacros = "75880514-38bc-4a95-a458-c2aea5a3a702"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 NamedDims = "356022a1-0364-5f58-8944-0da4b18d706f"
+PlutoTest = "cb4044da-4d16-4ffa-a6a3-8cad7f73ebdc"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
@@ -173,6 +177,7 @@ DataFrameMacros = "~0.2.1"
 DataFrames = "~1.3.2"
 Makie = "~0.16.3"
 NamedDims = "~0.2.45"
+PlutoTest = "~0.2.1"
 PlutoUI = "~0.7.34"
 StatsBase = "~0.33.14"
 """
@@ -1062,6 +1067,12 @@ git-tree-sha1 = "6f1b25e8ea06279b5689263cc538f51331d7ca17"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.1.3"
 
+[[deps.PlutoTest]]
+deps = ["HypertextLiteral", "InteractiveUtils", "Markdown", "Test"]
+git-tree-sha1 = "cd214d5c737563369887ac465a6d3c0fd7c1f854"
+uuid = "cb4044da-4d16-4ffa-a6a3-8cad7f73ebdc"
+version = "0.2.1"
+
 [[deps.PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
 git-tree-sha1 = "8979e9802b4ac3d58c503a20f2824ad67f9074dd"
@@ -1506,6 +1517,7 @@ version = "3.5.0+0"
 # ╠═0159f2db-0ac5-47fb-9d2b-e781eeadef2c
 # ╟─6e791734-2375-47df-b028-b1d3ac9796d5
 # ╠═2287fdaf-9b5a-4b2b-a88b-a0b056d932bc
+# ╠═4e7aadb1-fb77-4a72-af43-6b6bd7ae0341
 # ╠═8c5ab26f-ad65-4368-a26b-196b9223ef63
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
