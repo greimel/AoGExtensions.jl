@@ -7,8 +7,6 @@ using InteractiveUtils
 # ╔═╡ 61e53542-9520-4b2b-a4b5-0637c4000a4c
 begin
 	using Chain: @chain
-	using Makie: Scatter
-	import CairoMakie
 	using AlgebraOfGraphics: data, visual, mapping, linear, dims, draw, draw!
 end
 
@@ -27,6 +25,12 @@ using PlutoUI: TableOfContents
 
 # ╔═╡ b4a858ef-8dbe-4cf3-aab8-72795b5c0591
 using PlutoTest: @skip_as_script
+
+# ╔═╡ d7f9ec54-db56-4cd3-b890-7f4d303cbeee
+@skip_as_script using Makie: Scatter
+
+# ╔═╡ aca08206-9c8f-405b-bfb9-0876eec5ab5c
+@skip_as_script import CairoMakie
 
 # ╔═╡ 09a8ba84-d096-4ed0-82d2-498dddbf09fe
 md"""
@@ -1503,6 +1507,8 @@ version = "3.5.0+0"
 
 # ╔═╡ Cell order:
 # ╠═61e53542-9520-4b2b-a4b5-0637c4000a4c
+# ╠═d7f9ec54-db56-4cd3-b890-7f4d303cbeee
+# ╠═aca08206-9c8f-405b-bfb9-0876eec5ab5c
 # ╟─09a8ba84-d096-4ed0-82d2-498dddbf09fe
 # ╟─f145e810-0a40-479d-94b4-b6c9fcd0c7bc
 # ╠═d73529d2-9b4a-4272-8575-9bfa162e6ef8

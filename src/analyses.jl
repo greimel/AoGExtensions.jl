@@ -21,18 +21,20 @@ begin
 	using DataFrames
 end
 
-# ╔═╡ e16d1832-372e-4e2d-82c6-99230813aadf
-begin
-	using CairoMakie: CairoMakie
-	using AlgebraOfGraphics: visual, mapping, draw, data
-	using Makie: Scatter
-end
-
 # ╔═╡ 2287fdaf-9b5a-4b2b-a88b-a0b056d932bc
 using PlutoUI: TableOfContents
 
 # ╔═╡ 4e7aadb1-fb77-4a72-af43-6b6bd7ae0341
 using PlutoTest: @skip_as_script
+
+# ╔═╡ e16d1832-372e-4e2d-82c6-99230813aadf
+@skip_as_script	using AlgebraOfGraphics
+
+# ╔═╡ 8c303caa-98e4-4074-9259-c9d91fd06ed9
+@skip_as_script using Makie: Scatter
+
+# ╔═╡ 7540e86c-4eb9-48e9-9f2f-d39159f3914d
+@skip_as_script using CairoMakie
 
 # ╔═╡ 7c6db864-0c85-4879-9f13-53ebb478ddf4
 md"""
@@ -1508,6 +1510,8 @@ version = "3.5.0+0"
 # ╠═001b7144-21ea-4c40-b5f4-2a6c3bbc8c4d
 # ╠═fecd24a4-7838-4dfd-a77a-dfb73b76660a
 # ╠═e16d1832-372e-4e2d-82c6-99230813aadf
+# ╠═8c303caa-98e4-4074-9259-c9d91fd06ed9
+# ╠═7540e86c-4eb9-48e9-9f2f-d39159f3914d
 # ╟─7c6db864-0c85-4879-9f13-53ebb478ddf4
 # ╠═df21607e-2edb-47ca-a620-4568fdf3a8d7
 # ╠═aaf9ae96-7dd0-4088-8b15-f054f1fa72a9
