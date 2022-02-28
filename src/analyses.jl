@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ 001b7144-21ea-4c40-b5f4-2a6c3bbc8c4d
 begin
-	using Makie: Makie
+	using Makie: Makie, Scatter
 	using AlgebraOfGraphics: LinesFill, ProcessedLayer, transformation
 	using NamedDims: NamedDimsArray, unname, dimnames
 	using StatsBase: uweights, weights, Weights, quantile
@@ -31,7 +31,7 @@ using PlutoTest: @skip_as_script
 @skip_as_script	using AlgebraOfGraphics
 
 # ╔═╡ 8c303caa-98e4-4074-9259-c9d91fd06ed9
-@skip_as_script using Makie: Scatter
+
 
 # ╔═╡ 7540e86c-4eb9-48e9-9f2f-d39159f3914d
 @skip_as_script using CairoMakie
