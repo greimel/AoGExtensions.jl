@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ 001b7144-21ea-4c40-b5f4-2a6c3bbc8c4d
 begin
-	using Makie: Makie
+	using Makie: Makie, @recipe, automatic, band!, lines!, Lines, Attributes
 	using AlgebraOfGraphics: LinesFill, ProcessedLayer, transformation
 	using NamedDims: NamedDimsArray, unname, dimnames
 	using StatsBase: uweights, weights, Weights, quantile
@@ -20,9 +20,6 @@ begin
 	using DataFrameMacros
 	using DataFrames
 end
-
-# ╔═╡ ad812c7f-4329-4f22-b7ba-f33603ed5a4d
-using Makie: automatic
 
 # ╔═╡ 2287fdaf-9b5a-4b2b-a88b-a0b056d932bc
 using PlutoUI: TableOfContents
@@ -220,7 +217,7 @@ md"""
 """
 
 # ╔═╡ c13bfae2-8627-48b1-be67-38fa7df0d41a
-raw_df = mapreduce(vcat, 1:500) do i
+@skip_as_script raw_df = mapreduce(vcat, 1:500) do i
 	T = 100
 	drift = rand([-0.2, 0, 0.2])
 	x = 1:T
@@ -239,7 +236,7 @@ md"""
 """
 
 # ╔═╡ 59d2ef82-034b-420f-a571-101ecb36e907
-begin	
+@skip_as_script begin	
 	(; xs, ys, bands) = fan_chart_helper(raw_df.x, raw_df.y)	
 	αs = [0.7, 0.5, 0.3, 0.1]
 	
@@ -258,7 +255,7 @@ md"""
 """
 
 # ╔═╡ 0fa17a90-39aa-4a6c-b5c3-4e7802c8e2c2
-let
+@skip_as_script let
 	(; xs, ys, bands) = fan_chart_helper(raw_df.x, raw_df.y)
 	fanchart(xs, ys; bands, color = :blue)
 end
@@ -269,7 +266,9 @@ md"""
 """
 
 # ╔═╡ 018fe029-e3be-4bcc-ad2a-e29fb7ccaa28
-data(raw_df) * mapping(:x, :y, color = :drift => nonnumeric) * aog_fanchart() |> draw
+@skip_as_script data(raw_df) * mapping(
+	:x, :y, color = :drift => nonnumeric
+) * aog_fanchart() |> draw
 
 # ╔═╡ 1976b213-ce21-43d0-9a45-22a9e97514a6
 md"""
@@ -1643,7 +1642,6 @@ version = "3.5.0+0"
 # ╠═aaf9ae96-7dd0-4088-8b15-f054f1fa72a9
 # ╠═7d144c3f-bfac-45b4-bc68-b4bfcb6bb46d
 # ╟─b3a26ab2-9447-46ac-983e-cd658477f8da
-# ╠═ad812c7f-4329-4f22-b7ba-f33603ed5a4d
 # ╠═3e646149-8807-4a45-82ba-1113325053f1
 # ╠═f970c472-c6c6-4d56-af27-a2fa25006053
 # ╠═760da9e3-7904-41fb-be9f-0e23e5db9716
