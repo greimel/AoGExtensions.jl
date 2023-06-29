@@ -1,7 +1,7 @@
 name = "AoGExtensions"
 uuid = "7df18d33-496e-4cfd-8564-72cba2c0b329"
 authors = ["Fabian Greimel <fabgrei@gmail.com> and contributors"]
-version = "0.1.11"
+version = "0.1.12"
 
 [deps]
 AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
@@ -22,5 +22,5 @@ Chain = "0.4, 0.5"
 DataFrameMacros = "0.4"
 DataFrames = "1.2"
 NamedDims = "1"
-StatsBase = "0.33"
+StatsBase = "0.33, 0.34"
 julia = "1.6"
