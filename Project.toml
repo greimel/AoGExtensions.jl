@@ -1,7 +1,7 @@
 name = "AoGExtensions"
 uuid = "7df18d33-496e-4cfd-8564-72cba2c0b329"
 authors = ["Fabian Greimel <fabgrei@gmail.com> and contributors"]
-version = "0.1.12"
+version = "0.1.13"
 
 [deps]
 AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
@@ -16,9 +16,9 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
-AlgebraOfGraphics = "0.6.4"
-CategoricalArrays = "0.10"
-Chain = "0.4, 0.5"
+AlgebraOfGraphics = "0.11"
+CategoricalArrays = "1"
+Chain = "1"
 DataFrameMacros = "0.4"
 DataFrames = "1.2"
 NamedDims = "1"
